@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>خدرة شاي</title>
+
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="خدرة شاي">
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg1: #b87945;
+      --bg2: #7a4827;
+      --bg3: #3b2114;
+      --card: rgba(93, 51, 27, 0.72);
+      --card-strong: rgba(86, 47, 25, 0.88);
+      --card-2: rgba(125, 74, 42, 0.64);
+      --cream: #ffe8c8;
+      --cream-2: #f7d2a4;
+      --text: #fff4e8;
+      --muted: rgba(255, 244, 232, 0.72);
+      --border: rgba(255, 225, 190, 0.18);
+      --border-strong: rgba(255, 225, 190, 0.34);
+      --input-bg: rgba(69, 37, 19, 0.42);
+      --shadow: 0 22px 60px rgba(41, 20, 7, 0.35);
+      --soft-shadow: 0 10px 28px rgba(37, 16, 6, 0.24);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial;
+      background:
+        radial-gradient(circle at 50% -10%, rgba(255, 210, 156, .34), transparent 34%),
+        radial-gradient(circle at 20% 20%, rgba(255, 183, 111, .18), transparent 28%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 46%, var(--bg3) 100%);
+    }
+
+    .wrap {
+      width: min(100%, 1120px);
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(116, 65, 34, .82), rgba(76, 40, 21, .82)),
+        var(--card);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 226, 187, .14), transparent 30%),
+        linear-gradient(135deg, rgba(255,255,255,.06), transparent 45%);
+    }
+
+    .card > * { position: relative; z-index: 1; }
+
+    .hero {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 8px 0 18px;
+    }
+
+    .logo-wrap {
+      width: 88px;
+      height: 88px;
+      border-radius: 26px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(255, 221, 177, .22), rgba(255, 221, 177, .04));
+      border: 1px solid rgba(255, 225, 190, .22);
+      box-shadow: var(--soft-shadow);
+      margin-bottom: 14px;
+    }
+
+    .logo-wrap img {
+      width: 74px;
+      height: 74px;
+      border-radius: 22px;
+      display: block;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 38px);
+      line-height: 1.1;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    p.sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .form-panel {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 860px) {
+      .form-panel {
+        grid-template-columns: 1.05fr .95fr;
+        align-items: start;
+      }
+    }
+
+    .section-card {
+      padding: 16px;
+      border-radius: 22px;
+      background: rgba(71, 38, 20, .38);
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 780px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    label {
+      font-size: 13px;
+      color: rgba(255,244,232,.92);
+      display: block;
+      margin-bottom: 7px;
+      font-weight: 600;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      outline: none;
+      font-size: 15px;
+      height: 50px;
+      transition: border-color .2s ease, background .2s ease, box-shadow .2s ease, transform .15s ease;
+    }
+
+    select:focus, input:focus {
+      border-color: rgba(255, 218, 176, 0.48);
+      box-shadow: 0 0 0 4px rgba(255, 218, 176, 0.10);
+      background: rgba(76, 43, 21, 0.56);
+    }
+
+    input[type=number] {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    select option {
+      color: #111;
+      background: #fff;
+    }
+
+    input::placeholder {
+      opacity: .72;
+      color: rgba(255, 244, 232, 0.7);
+    }
+
+    .hidden { display: none !important; }
+
+    .mode-select-hidden {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
+    }
+
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 5px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: rgba(64, 34, 18, .35);
+    }
+
+    .mode-tab {
+      height: 54px;
+      border: 0;
+      border-radius: 14px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: .2s ease;
+    }
+
+    .mode-tab svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 1.8;
+    }
+
+    .mode-tab.active {
+      color: #3b2416;
+      background: linear-gradient(180deg, #ffe6c2, #f0c18a);
+      box-shadow: 0 8px 18px rgba(37,16,6,.22);
+      font-weight: 700;
+    }
+
+    .muted2 {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 7px;
+    }
+
+    .tea-picker { position: relative; }
+
+    .clear-btn {
+      position: absolute;
+      left: 10px;
+      top: 13px;
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.10);
+      color: var(--text);
+      cursor: pointer;
+      display: none;
+      line-height: 24px;
+      padding: 0;
+      font-size: 15px;
+      z-index: 2;
+    }
+
+    .tea-results {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      left: 0;
+      background: rgba(78, 42, 22, .98);
+      border: 1px solid var(--border-strong);
+      border-radius: 16px;
+      max-height: 260px;
+      overflow-y: auto;
+      display: none;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+
+    .tea-result-item {
+      padding: 12px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      transition: background .15s ease;
+    }
+
+    .tea-result-item:last-child { border-bottom: none; }
+
+    .tea-result-item:hover {
+      background: rgba(255, 231, 199, 0.10);
+    }
+
+    .water-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 9px;
+    }
+
+    .waterBtn {
+      padding: 10px;
+      border-radius: 15px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.07);
+      color: var(--text);
+      cursor: pointer;
+      transition: all .2s ease;
+      text-align: center;
+      height: 50px;
+      font-size: 15px;
+    }
+
+    .waterBtn.active {
+      color: #3b2416;
+      background: linear-gradient(180deg, #ffe6c2, #f0c18a);
+      border-color: rgba(255, 231, 199, 0.42);
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(37,16,6,.22);
+    }
+
+    .waterBtn:hover { transform: translateY(-1px); }
+
+    .customInput { border: 1px dashed var(--border-strong); }
+
+    .out {
+      margin-top: 14px;
+      background:
+        linear-gradient(180deg, rgba(142, 84, 48, .58), rgba(93, 51, 27, .58));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 16px;
+      line-height: 1.8;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .kpi {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 600px) {
+      .kpi { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (min-width: 1024px) {
+      .kpi { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    }
+
+    .box {
+      padding: 15px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid rgba(255, 225, 190, 0.14);
+      min-height: 118px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .muted svg, .muted i svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.8;
+      opacity: .95;
+      color: var(--cream-2);
+    }
+
+    .big {
+      font-size: 26px;
+      font-weight: 800;
+      margin-top: 8px;
+      color: var(--text);
+      letter-spacing: -0.4px;
+    }
+
+    .note {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 225, 190, 0.12);
+      background: rgba(55, 29, 15, .24);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    @media (min-width: 520px) {
+      .actions { grid-template-columns: 1fr 1fr; }
+    }
+
+    .actionBtn {
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      transition: background .2s ease, transform .15s ease;
+      min-height: 48px;
+    }
+
+    .actionBtn:hover { background: rgba(255,255,255,0.14); }
+    .actionBtn:active { transform: scale(.98); }
+
+    #copyBtn {
+      color: #3b2416;
+      background: linear-gradient(180deg, #ffe6c2, #f0c18a);
+      font-weight: 800;
+    }
+
+    .tip-card {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255, 230, 194, .09);
+      border: 1px solid rgba(255, 225, 190, 0.14);
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .tip-card svg {
+      width: 18px;
+      height: 18px;
+      color: var(--cream-2);
+      flex: 0 0 auto;
+      margin-top: 2px;
+    }
+
+    @media (max-width: 520px) {
+      .wrap { padding: 14px; }
+      .card { border-radius: 26px; padding: 18px; }
+      .grid { gap: 12px; }
+      .water-options { grid-template-columns: 1fr 1fr 1fr; }
+      .waterBtn { font-size: 14px; padding-inline: 6px; }
+      .big { font-size: 24px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="hero">
+        <div class="logo-wrap">
+          <img src="icon.png" alt="خدرة شاي">
+        </div>
+
+        <h1>خدرة شاي ☕</h1>
+        <p class="sub" id="dynamicText">اختر نوع الشاي وحدد كمية الماء</p>
+      </div>
+
+      <div class="form-panel">
+        <div class="section-card">
+          <div class="grid">
+            <div style="grid-column: 1 / -1;">
+              <label>طريقة الحساب</label>
+
+              <select id="modeSelect" class="mode-select-hidden">
+                <option value="tea" selected>حسب نوع الشاي</option>
+                <option value="manual">حسب الوزنة اليدوية</option>
+              </select>
+
+              <div class="mode-tabs">
+                <button type="button" class="mode-tab active" id="modeTeaBtn">
+                  <i data-lucide="leaf"></i>
+                  حسب نوع الشاي
+                </button>
+                <button type="button" class="mode-tab" id="modeManualBtn">
+                  <i data-lucide="scale"></i>
+                  وزنة يدوية
+                </button>
+              </div>
+
+              <div class="muted2">اختر من القائمة أو أدخل الوزنة بنفسك</div>
+            </div>
+
+            <div id="teaModeBlock" style="grid-column: 1 / -1;">
+              <label>اختر الشاي</label>
+              <div class="tea-picker">
+                <input id="teaSearch" type="text" placeholder="ابحث عن الشاي أو اختار من القائمة..." style="padding-left:44px;" />
+                <button id="clearTeaSearch" class="clear-btn" type="button">×</button>
+                <div id="teaResults" class="tea-results"></div>
+              </div>
+              <select id="teaSelect" style="display:none;"></select>
+            </div>
+
+            <div id="typeWrap" class="hidden">
+              <label>نوع الورق</label>
+              <select id="typeSelect"></select>
+              <div class="muted2">يظهر فقط للبراند اللي له أكثر من نوع</div>
+            </div>
+
+            <div>
+              <label>كمية الماء (مل)</label>
+              <div id="waterOptions" class="water-options">
+                <button type="button" id="water1000" class="waterBtn active">1000 مل</button>
+                <button type="button" id="water500" class="waterBtn">500 مل</button>
+                <button type="button" id="customWaterBtn" class="waterBtn">أخرى</button>
+                <input
+                  id="waterMl"
+                  class="waterBtn customInput hidden"
+                  type="number"
+                  inputmode="decimal"
+                  min="1"
+                  placeholder="مثلاً 780"
+                />
+              </div>
+              <div class="muted2">اختر سريع أو أدخل الكمية بنفسك</div>
+            </div>
+
+            <div id="tasteWrap">
+              <label>المذاق</label>
+              <select id="taste">
+                <option value="normal" selected>مناسب</option>
+                <option value="medium">متوسط</option>
+                <option value="nosugar">بدون سكر</option>
+              </select>
+              <div class="muted2" id="tasteHint"></div>
+            </div>
+
+            <div id="manualModeBlock" class="hidden">
+              <label>وزن الشاي لكل 1 لتر</label>
+              <input id="manualTeaPerLiter" type="number" inputmode="decimal" min="0" step="0.1" placeholder="مثال: 12" />
+              <div class="muted2">اكتب الوزنة اللي تعرفها لكل لتر</div>
+            </div>
+
+            <div id="manualSugarWrap" class="hidden">
+              <label>السكر لكل 1 لتر (اختياري)</label>
+              <input id="manualSugarPerLiter" type="number" inputmode="decimal" min="0" step="0.1" placeholder="مثال: 50" />
+              <div class="muted2">إذا تركته فاضي، بيطلع بدون سكر</div>
+            </div>
+
+            <div id="manualSteepWrap" class="hidden">
+              <label>مدة الخدرة (اختياري)</label>
+              <input id="manualSteepMinutes" type="text" placeholder="مثال: 20-25 دقيقة" />
+              <div class="muted2">تقدر تكتبها مثل: 20-25 دقيقة أو 30 دقيقة</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="out" id="output" aria-live="polite"></div>
+
+          <div class="tip-card">
+            <i data-lucide="lightbulb"></i>
+            <div>
+              <b>نصيحة:</b>
+              للحصول على أفضل خدرة، استخدم ماء مغلي واترك الشاي لمدة الخدرة المحددة بدون زيادة.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const SIMPLE_TEAS = [
+  { id: "nahrain-op", teaType: "OP", brand: "شاي النهرين", teaPerLiterByTaste: { normal: 12, medium: 12, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "naif-op1", teaType: "OP1", brand: "شاي نايف", teaPerLiterByTaste: { normal: 14, medium: 14, nosugar: 14 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 30, max: 35 } },
+  { id: "musmak", teaType: "", brand: "المصمك", teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 11.5 }, sugarPerLiterByTaste: { normal: 48, medium: 58, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "twinings", teaType: "", brand: "تويننجز", teaPerLiterByTaste: { normal: 10.5, medium: 12, nosugar: 10.5 }, sugarPerLiterByTaste: { normal: 50, medium: 60, nosugar: 0 }, steepMinutes: { min: 20, max: 30 } },
+  { id: "sankin", teaType: "", brand: "سنكين", teaPerLiterByTaste: { normal: 10.5, medium: 12, nosugar: 10.5 }, sugarPerLiterByTaste: { normal: 50, medium: 60, nosugar: 0 }, steepMinutes: { min: 20, max: 30 } },
+  { id: "hout-ahmar", teaType: "", brand: "الحوت الأحمر", teaPerLiterByTaste: { normal: 10.5, medium: 10.5, nosugar: 9.5 }, sugarPerLiterByTaste: { normal: 53, medium: 60, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "muqaddam", teaType: "", brand: "المقدم", teaPerLiterByTaste: { normal: 13, medium: 13.5, nosugar: 13 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "dahna", teaType: "", brand: "الدهناء", teaPerLiterByTaste: { normal: 12, medium: 13, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 50, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "tolay", teaType: "", brand: "تولاي", teaPerLiterByTaste: { normal: 13, medium: 14, nosugar: 13 }, sugarPerLiterByTaste: { normal: 60, medium: 60, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "bin-mangash", teaType: "", brand: "بن منقاش", teaPerLiterByTaste: { normal: 13, medium: 14, nosugar: 13 }, sugarPerLiterByTaste: { normal: 48, medium: 58, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "fakham-bop1", teaType: "BOP1", brand: "الفخم", teaPerLiterByTaste: { normal: 12, medium: 13, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "istiknan", teaType: "", brand: "استكنان", teaPerLiterByTaste: { normal: 12, medium: 13, nosugar: 12 }, sugarPerLiterByTaste: { normal: 48, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "hub-wadahn", teaType: "", brand: "حب ودهن", teaPerLiterByTaste: { normal: 12, medium: 15, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "ceylon", teaType: "", brand: "سيلان", teaPerLiterByTaste: { normal: 12.5, medium: 13, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "mazad", teaType: "", brand: "المزاد", teaPerLiterByTaste: { normal: 11, medium: 11, nosugar: 11 }, sugarPerLiterByTaste: { normal: 48, medium: 55, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "abu-ghori", teaType: "", brand: "ابو غوري", teaPerLiterByTaste: { normal: 12, medium: 12, nosugar: 12 }, sugarPerLiterByTaste: { normal: 0, medium: 0, nosugar: 0 }, steepMinutes: { min: 20, max: 30 } },
+  { id: "ghadha-ahmar", teaType: "", brand: "الغضا الأحمر", teaPerLiterByTaste: { normal: 11, medium: 11.5, nosugar: 11 }, sugarPerLiterByTaste: { normal: 52, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "badeer", teaType: "", brand: "البدير", teaPerLiterByTaste: { normal: 12, medium: 12, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "kuwait-imports", teaType: "", brand: "واردات الكويت", teaPerLiterByTaste: { normal: 13, medium: 13.5, nosugar: 13 }, sugarPerLiterByTaste: { normal: 47, medium: 52, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "khaltat-abbas", teaType: "", brand: "خلطة عباس", teaPerLiterByTaste: { normal: 11, medium: 12, nosugar: 11 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "qimmah", teaType: "", brand: "القمة", teaPerLiterByTaste: { normal: 9.5, medium: 10.5, nosugar: 9.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "babel", teaType: "", brand: "بابل", teaPerLiterByTaste: { normal: 10, medium: 10.5, nosugar: 10 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "abu-jabal", teaType: "", brand: "ابو جبل", teaPerLiterByTaste: { normal: 12, medium: 12, nosugar: 9 }, sugarPerLiterByTaste: { normal: 53, medium: 60, nosugar: 0 }, steepMinutes: { min: 30, max: 30 } },
+  { id: "dasman-hadid", teaType: "", brand: "دسمان حديد", teaPerLiterByTaste: { normal: 10, medium: 11, nosugar: 10 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "abu-tair", teaType: "", brand: "ابو طير", teaPerLiterByTaste: { normal: 9.5, medium: 10.5, nosugar: 9.5 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "awaleen", teaType: "", brand: "الأولين", teaPerLiterByTaste: { normal: 12.5, medium: 13, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "quality", teaType: "", brand: "كوالتي", teaPerLiterByTaste: { normal: 13, medium: 13.5, nosugar: 13 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "999", teaType: "", brand: "999", teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "jihan-sadah", teaType: "", brand: "جيهان سادة", teaPerLiterByTaste: { normal: 12, medium: 12, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 20 } },
+  { id: "zahrat-alshai", teaType: "", brand: "زهرة الشاي", teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 30, max: 30 } },
+  { id: "bentleyz", teaType: "", brand: "بنتليز", teaPerLiterByTaste: { normal: 12.5, medium: 13, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "tayi", teaType: "", brand: "الطائي", teaPerLiterByTaste: { normal: 13, medium: 13, nosugar: 13 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "khair", teaType: "", brand: "الخير", teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "ghazaleen", teaType: "", brand: "الغزالين", teaPerLiterByTaste: { normal: 13, medium: 13, nosugar: 13 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "kursi-dhahabi", teaType: "", brand: "الكرسي الذهبي", teaPerLiterByTaste: { normal: 11.5, medium: 12.5, nosugar: 11.5 }, sugarPerLiterByTaste: { normal: 50, medium: 60, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "wazzah-ustuwani", teaType: "", brand: "الوزه اسطواني", teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "surur", teaType: "", brand: "السرور", teaPerLiterByTaste: { normal: 11.5, medium: 12.5, nosugar: 11.5 }, sugarPerLiterByTaste: { normal: 50, medium: 60, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "rabee-hadid", teaType: "", brand: "ربيع حديد", teaPerLiterByTaste: { normal: 12, medium: 12, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "taho-saham-dhahabi", teaType: "", brand: "التحو السهم الذهبي", teaPerLiterByTaste: { normal: 12, medium: 13, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "karazah", teaType: "", brand: "كرزة", teaPerLiterByTaste: { normal: 11.5, medium: 12.5, nosugar: 11.5 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "wazzah-hadid-murabba", teaType: "", brand: "الوزه حديد مربع", teaPerLiterByTaste: { normal: 11.5, medium: 12.5, nosugar: 11.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "kashtah", teaType: "", brand: "كشته", teaPerLiterByTaste: { normal: 12, medium: 12, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 25, max: 30 } },
+  { id: "sangil", teaType: "", brand: "سنقيل", teaPerLiterByTaste: { normal: 11.5, medium: 12.5, nosugar: 11.5 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 30, max: 30 } },
+  { id: "wajar", teaType: "", brand: "وجار", teaPerLiterByTaste: { normal: 11.5, medium: 12.5, nosugar: 11.5 }, sugarPerLiterByTaste: { normal: 50, medium: 60, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "fadha-royal", teaType: "", brand: "الفضا رويال", teaPerLiterByTaste: { normal: 11.5, medium: 12.5, nosugar: 11.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 30, max: 30 } },
+  { id: "reston", teaType: "", brand: "ريستون", teaPerLiterByTaste: { normal: 11.5, medium: 12.5, nosugar: 11.5 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "ghamdan", teaType: "", brand: "غمدان", teaPerLiterByTaste: { normal: 12.5, medium: 13, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } },
+  { id: "qarnas", teaType: "", brand: "قرناس", teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "511", teaType: "", brand: "511", teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 53, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "samman-hadid-dayri", teaType: "", brand: "الصمان حديد دائري", teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 50, nosugar: 0 }, steepMinutes: { min: 30, max: 30 } },
+  { id: "samman-hadid-murabba", teaType: "", brand: "الصمان حديد مربع", teaPerLiterByTaste: { normal: 12, medium: 12, nosugar: 12 }, sugarPerLiterByTaste: { normal: 50, medium: 50, nosugar: 0 }, steepMinutes: { min: 25, max: 25 } },
+  { id: "ras-alhisan", teaType: "", brand: "رأس الحصان", teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 12.5 }, sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 }, steepMinutes: { min: 20, max: 25 } }
+];
+
+const BRANDED_TEAS = [
+  {
+    brandId: "munais",
+    brand: "شاي المنيس",
+    items: [
+      {
+        id: "munais-op1",
+        teaType: "OP1",
+        teaPerLiterByTaste: { normal: 12.5, medium: 13.5, nosugar: 11.5 },
+        sugarPerLiterByTaste: { normal: 50, medium: 55, nosugar: 0 },
+        steepMinutes: { min: 25, max: 30 }
+      }
+    ]
+  }
+];
+
+const CUP_ML = 100;
+
+function smartNumber(n) {
+  if (!Number.isFinite(n)) return "-";
+  const isInt = Math.abs(n - Math.round(n)) < 1e-9;
+  return isInt ? String(Math.round(n)) : n.toFixed(1);
+}
+
+function toLitersFromMl(ml) {
+  const v = Number(ml);
+  if (!Number.isFinite(v) || v <= 0) return NaN;
+  return v / 1000;
+}
+
+function minutesText(r) {
+  if (!r) return "-";
+  if (typeof r === "string") return r;
+  if (r.min === r.max) return `${r.min} دقيقة`;
+  return `${r.min} – ${r.max} دقيقة`;
+}
+
+function tasteLabel(v) {
+  if (v === "medium") return "متوسط";
+  if (v === "nosugar") return "بدون سكر";
+  return "مناسب";
+}
+
+const dynamicText = document.getElementById("dynamicText");
+const water1000Btn = document.getElementById("water1000");
+const water500Btn = document.getElementById("water500");
+const customWaterBtn = document.getElementById("customWaterBtn");
+const modeSelect = document.getElementById("modeSelect");
+const modeTeaBtn = document.getElementById("modeTeaBtn");
+const modeManualBtn = document.getElementById("modeManualBtn");
+const teaSearch = document.getElementById("teaSearch");
+const teaSelect = document.getElementById("teaSelect");
+const typeWrap = document.getElementById("typeWrap");
+const typeSelect = document.getElementById("typeSelect");
+const waterMlInp = document.getElementById("waterMl");
+const tasteSel = document.getElementById("taste");
+const tasteHint = document.getElementById("tasteHint");
+const output = document.getElementById("output");
+const clearTeaSearch = document.getElementById("clearTeaSearch");
+const teaResults = document.getElementById("teaResults");
+const tasteWrap = document.getElementById("tasteWrap");
+const teaModeBlock = document.getElementById("teaModeBlock");
+const manualModeBlock = document.getElementById("manualModeBlock");
+const manualSugarWrap = document.getElementById("manualSugarWrap");
+const manualSteepWrap = document.getElementById("manualSteepWrap");
+const manualTeaPerLiter = document.getElementById("manualTeaPerLiter");
+const manualSugarPerLiter = document.getElementById("manualSugarPerLiter");
+const manualSteepMinutes = document.getElementById("manualSteepMinutes");
+
+function syncModeButtons() {
+  const isManual = modeSelect.value === "manual";
+  modeTeaBtn.classList.toggle("active", !isManual);
+  modeManualBtn.classList.toggle("active", isManual);
+}
+
+function updateClearButton() {
+  clearTeaSearch.style.display = teaSearch.value ? "block" : "none";
+}
+
+function populateMainSelect() {
+  const current = teaSelect.value;
+  teaSelect.innerHTML = "";
+
+  SIMPLE_TEAS.forEach((t) => {
+    const opt = document.createElement("option");
+    opt.value = `simple:${t.id}`;
+    opt.textContent = t.teaType ? `${t.brand} — ${t.teaType}` : t.brand;
+    teaSelect.appendChild(opt);
+  });
+
+  BRANDED_TEAS.forEach((b) => {
+    const opt = document.createElement("option");
+    opt.value = `brand:${b.brandId}`;
+    opt.textContent = b.brand;
+    teaSelect.appendChild(opt);
+  });
+
+  const stillExists = Array.from(teaSelect.options).some((o) => o.value === current);
+  if (stillExists) {
+    teaSelect.value = current;
+  } else if (teaSelect.options.length) {
+    teaSelect.value = teaSelect.options[0].value;
+  }
+}
+
+function showResults(filterText = "") {
+  const q = filterText.trim().toLowerCase();
+  teaResults.innerHTML = "";
+
+  const results = [];
+
+  SIMPLE_TEAS.forEach((t) => {
+    const label = `${t.brand} ${t.teaType || ""}`.toLowerCase();
+    if (!q || label.includes(q)) {
+      results.push({
+        id: t.id,
+        label: t.teaType ? `${t.brand} — ${t.teaType}` : t.brand,
+        type: "simple"
+      });
+    }
+  });
+
+  BRANDED_TEAS.forEach((b) => {
+    b.items.forEach((it) => {
+      const label = `${b.brand} ${it.teaType}`.toLowerCase();
+      if (!q || label.includes(q)) {
+        results.push({
+          id: it.id,
+          brandId: b.brandId,
+          label: `${b.brand} — ${it.teaType}`,
+          type: "brand"
+        });
+      }
+    });
+  });
+
+  if (!results.length) {
+    teaResults.style.display = "none";
+    return;
+  }
+
+  results.forEach((r) => {
+    const item = document.createElement("div");
+    item.className = "tea-result-item";
+    item.textContent = r.label;
+
+    item.onclick = () => {
+      teaSearch.value = r.label;
+      teaResults.style.display = "none";
+      updateClearButton();
+
+      if (r.type === "simple") {
+        teaSelect.value = `simple:${r.id}`;
+        typeWrap.classList.add("hidden");
+        render();
+        return;
+      }
+
+      teaSelect.value = `brand:${r.brandId}`;
+      render();
+
+      setTimeout(() => {
+        typeSelect.value = r.id;
+        render();
+      }, 0);
+    };
+
+    teaResults.appendChild(item);
+  });
+
+  teaResults.style.display = "block";
+}
+
+function updateModeUI() {
+  const isManual = modeSelect.value === "manual";
+
+  syncModeButtons();
+
+  teaModeBlock.classList.toggle("hidden", isManual);
+  typeWrap.classList.add("hidden");
+  manualModeBlock.classList.toggle("hidden", !isManual);
+  manualSugarWrap.classList.toggle("hidden", !isManual);
+  manualSteepWrap.classList.toggle("hidden", !isManual);
+  tasteWrap.classList.toggle("hidden", isManual);
+
+  dynamicText.textContent = isManual
+    ? "أدخل وزنة الشاي وحدد كمية الماء"
+    : "اختر نوع الشاي وحدد كمية الماء";
+
+  if (isManual) {
+    teaResults.style.display = "none";
+  }
+
+  render();
+}
+
+function getSelectedTeaObject() {
+  const val = teaSelect.value || "";
+  const taste = tasteSel.value;
+
+  if (val.startsWith("simple:")) {
+    const id = val.replace("simple:", "");
+    const tea = SIMPLE_TEAS.find((x) => x.id === id) || SIMPLE_TEAS[0];
+
+    typeWrap.classList.add("hidden");
+
+    return {
+      brandLabel: tea.brand,
+      teaType: tea.teaType,
+      teaPerLiterPicked: Number(tea.teaPerLiterByTaste[taste]),
+      sugarPerLiterPicked: Number(tea.sugarPerLiterByTaste[taste] || 0),
+      steepMinutes: tea.steepMinutes
+    };
+  }
+
+  if (val.startsWith("brand:")) {
+    const brandId = val.replace("brand:", "");
+    const brand = BRANDED_TEAS.find((b) => b.brandId === brandId) || BRANDED_TEAS[0];
+
+    typeWrap.classList.remove("hidden");
+
+    const existingIds = Array.from(typeSelect.options).map((o) => o.value);
+    const shouldRebuild =
+      existingIds.length !== brand.items.length ||
+      (existingIds[0] && !brand.items.some((it) => it.id === existingIds[0]));
+
+    if (shouldRebuild) {
+      typeSelect.innerHTML = "";
+      brand.items.forEach((it) => {
+        const opt = document.createElement("option");
+        opt.value = it.id;
+        opt.textContent = it.teaType;
+        typeSelect.appendChild(opt);
+      });
+      typeSelect.value = brand.items[0].id;
+    }
+
+    const selectedItem = brand.items.find((it) => it.id === typeSelect.value) || brand.items[0];
+
+    return {
+      brandLabel: brand.brand,
+      teaType: selectedItem.teaType,
+      teaPerLiterPicked: Number(selectedItem.teaPerLiterByTaste[taste]),
+      sugarPerLiterPicked: Number(selectedItem.sugarPerLiterByTaste[taste] || 0),
+      steepMinutes: selectedItem.steepMinutes
+    };
+  }
+
+  return null;
+}
+
+function getManualTeaObject() {
+  const teaBase = Number(manualTeaPerLiter.value);
+  const sugarBase = Number(manualSugarPerLiter.value);
+  const steepText = manualSteepMinutes.value.trim();
+
+  if (!Number.isFinite(teaBase) || teaBase <= 0) return null;
+
+  const sugarPerLiterPicked =
+    Number.isFinite(sugarBase) && sugarBase >= 0 ? sugarBase : 0;
+
+  return {
+    brandLabel: "إدخال يدوي",
+    teaType: "وزنة مخصصة",
+    teaPerLiterPicked: teaBase,
+    sugarPerLiterPicked,
+    steepMinutes: steepText || "-"
+  };
+}
+
+function getCurrentTeaObject() {
+  return modeSelect.value === "manual" ? getManualTeaObject() : getSelectedTeaObject();
+}
+
+function getResultText() {
+  const liters = toLitersFromMl(waterMlInp.value);
+  if (!Number.isFinite(liters)) return "";
+
+  const teaObj = getCurrentTeaObject();
+  if (!teaObj) return "";
+
+  const tasteText = modeSelect.value === "manual"
+    ? "حسب الوزنة"
+    : tasteLabel(tasteSel.value);
+
+  const teaTypeText = teaObj.teaType ? ` (${teaObj.teaType})` : "";
+  const teaGrams = smartNumber(teaObj.teaPerLiterPicked * liters);
+  const sugarGrams = teaObj.sugarPerLiterPicked * liters;
+
+  let sugarText = "—";
+  if (teaObj.sugarPerLiterPicked === 0) {
+    sugarText = "بدون سكر";
+  } else if (teaObj.sugarPerLiterPicked) {
+    sugarText = `${smartNumber(sugarGrams)} جم`;
+  }
+
+  const cups = smartNumber(Number(waterMlInp.value) / CUP_ML);
+
+  return `
+☕ خدرة شاي
+
+📌 النوع: ${teaObj.brandLabel}${teaTypeText}
+💧 الماء: ${waterMlInp.value} مل
+✨ المذاق: ${tasteText}
+
+⚖️ الشاي: ${teaGrams} جم
+🍬 السكر: ${sugarText}
+⏱️ الخدرة: ${minutesText(teaObj.steepMinutes)}
+☕ البيالات: ${cups} (تقريباً)
+
+تم الحساب عبر خدرة شاي
+https://khadra-t.netlify.app/
+`.trim();
+}
+
+function bindActionButtons() {
+  const copyBtn = document.getElementById("copyBtn");
+  const waBtn = document.getElementById("waBtn");
+
+  if (copyBtn) {
+    copyBtn.onclick = async () => {
+      const text = getResultText();
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+
+      copyBtn.textContent = "تم النسخ ✓";
+      setTimeout(() => {
+        copyBtn.textContent = "نسخ النتيجة";
+      }, 1500);
+    };
+  }
+
+  if (waBtn) {
+    waBtn.onclick = () => {
+      const text = encodeURIComponent(getResultText());
+      if (!text) return;
+      window.location.href = `https://wa.me/?text=${text}`;
+    };
+  }
+}
+
+function render() {
+  try {
+    const liters = toLitersFromMl(waterMlInp.value);
+    if (!Number.isFinite(liters)) {
+      output.innerHTML = `⚠️ دخل كمية ماء صحيحة بالمل.`;
+      return;
+    }
+
+    const teaObj = getCurrentTeaObject();
+    if (!teaObj) {
+      output.innerHTML = `⚠️ أدخل وزنة الشاي لكل لتر أو اختر نوع شاي من القائمة.`;
+      return;
+    }
+
+    tasteHint.textContent = "";
+
+    const isManual = modeSelect.value === "manual";
+    const taste = tasteSel.value;
+    const teaGrams = teaObj.teaPerLiterPicked * liters;
+    const sugarGrams = teaObj.sugarPerLiterPicked === 0 ? 0 : teaObj.sugarPerLiterPicked * liters;
+
+    const waterMl = Number(waterMlInp.value);
+    const cups = Number.isFinite(waterMl) && waterMl > 0 ? waterMl / CUP_ML : NaN;
+    const sugarText = teaObj.sugarPerLiterPicked === 0 ? "بدون سكر" : `${smartNumber(sugarGrams)} جم`;
+    const teaTypeText = teaObj.teaType ? ` — ${teaObj.teaType}` : "";
+
+    output.innerHTML = `
+      <div class="kpi">
+        <div class="box">
+          <div class="muted"><i data-lucide="scale"></i> وزن الشاي المطلوب</div>
+          <div class="big">${smartNumber(teaGrams)} جم</div>
+          <div class="muted2">${isManual ? "حسب الإدخال" : `${tasteLabel(taste)} • لكل لتر: ${smartNumber(teaObj.teaPerLiterPicked)} جم`}</div>
+        </div>
+
+        <div class="box">
+          <div class="muted"><i data-lucide="candy"></i> السكر</div>
+          <div class="big">${sugarText}</div>
+          <div class="muted2">${teaObj.sugarPerLiterPicked === 0 ? "بدون سكر" : `لكل لتر: ${smartNumber(teaObj.sugarPerLiterPicked)} جم`}</div>
+        </div>
+
+        <div class="box">
+          <div class="muted"><i data-lucide="clock"></i> مدة الخدرة</div>
+          <div class="big">${minutesText(teaObj.steepMinutes)}</div>
+        </div>
+
+        <div class="box">
+          <div class="muted"><i data-lucide="coffee"></i> كم بيالة تكفي (تقريباً)</div>
+          <div class="big">${smartNumber(cups)}</div>
+          <div class="muted2">حجم البيالة الواحدة تقريبًا ١٠٠ مل</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="copyBtn" class="actionBtn">نسخ النتيجة</button>
+        <button id="waBtn" class="actionBtn">مشاركة واتساب</button>
+      </div>
+
+      <div class="note">
+        <b>المنتج:</b> ${teaObj.brandLabel}${teaTypeText}<br/>
+        <b>الماء:</b> ${waterMlInp.value} مل${isManual ? "" : `<br/><b>المذاق:</b> ${tasteLabel(taste)}`}
+      </div>
+    `;
+
+    if (window.lucide) lucide.createIcons();
+    bindActionButtons();
+  } catch (e) {
+    output.innerHTML = `
+      <div style="padding:12px;border-radius:12px;border:1px solid rgba(255,80,80,.35);background:rgba(255,80,80,.10)">
+        ⚠️ صار خطأ في البيانات.
+        <div style="opacity:.8;font-size:12px;margin-top:6px">تفاصيل: ${String(e.message || e)}</div>
+      </div>
+    `;
+  }
+}
+
+function setWaterPreset(value) {
+  water1000Btn.classList.remove("active");
+  water500Btn.classList.remove("active");
+  customWaterBtn.classList.remove("active");
+
+  waterMlInp.classList.add("hidden");
+  waterMlInp.classList.remove("active");
+  customWaterBtn.classList.remove("hidden");
+
+  if (value === 1000) {
+    water1000Btn.classList.add("active");
+    waterMlInp.value = "1000";
+  } else if (value === 500) {
+    water500Btn.classList.add("active");
+    waterMlInp.value = "500";
+  }
+
+  render();
+}
+
+modeTeaBtn.addEventListener("click", () => {
+  modeSelect.value = "tea";
+  updateModeUI();
+});
+
+modeManualBtn.addEventListener("click", () => {
+  modeSelect.value = "manual";
+  updateModeUI();
+});
+
+teaSearch.addEventListener("input", () => {
+  updateClearButton();
+  showResults(teaSearch.value);
+});
+
+teaSearch.addEventListener("focus", () => {
+  showResults(teaSearch.value);
+});
+
+teaSearch.addEventListener("click", () => {
+  showResults(teaSearch.value);
+});
+
+clearTeaSearch.addEventListener("click", () => {
+  teaSearch.value = "";
+  updateClearButton();
+  showResults("");
+  teaSearch.focus();
+});
+
+document.addEventListener("click", (e) => {
+  if (!teaModeBlock.contains(e.target)) {
+    teaResults.style.display = "none";
+  }
+});
+
+modeSelect.addEventListener("change", updateModeUI);
+teaSelect.addEventListener("change", render);
+typeSelect.addEventListener("change", render);
+tasteSel.addEventListener("change", render);
+
+manualTeaPerLiter.addEventListener("input", render);
+manualSugarPerLiter.addEventListener("input", render);
+manualSteepMinutes.addEventListener("input", render);
+
+water1000Btn.addEventListener("click", () => {
+  setWaterPreset(1000);
+});
+
+water500Btn.addEventListener("click", () => {
+  setWaterPreset(500);
+});
+
+customWaterBtn.addEventListener("click", () => {
+  water1000Btn.classList.remove("active");
+  water500Btn.classList.remove("active");
+  customWaterBtn.classList.add("hidden");
+
+  waterMlInp.classList.remove("hidden");
+  waterMlInp.classList.add("active");
+  waterMlInp.value = "";
+  waterMlInp.focus();
+});
+
+waterMlInp.addEventListener("input", () => {
+  render();
+});
+
+waterMlInp.addEventListener("blur", () => {
+  if (!waterMlInp.value) {
+    waterMlInp.classList.add("hidden");
+    waterMlInp.classList.remove("active");
+    customWaterBtn.classList.remove("hidden");
+    customWaterBtn.classList.add("active");
+  }
+});
+
+populateMainSelect();
+updateClearButton();
+updateModeUI();
+setWaterPreset(1000);
+render();
+
+if (window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>
