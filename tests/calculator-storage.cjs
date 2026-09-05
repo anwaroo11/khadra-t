@@ -6,7 +6,7 @@ const path = require("node:path");
 const {execFileSync} = require("node:child_process");
 const root = path.resolve(__dirname, "..");
 const current = fs.readFileSync(path.join(root, "index.html"), "utf8");
-const baseline = execFileSync("git", ["show", "4e7152616467763607e002c64fb3c263b116fda2:index.html"], {cwd:root,encoding:"utf8"});
+const baseline = execFileSync("git", ["show", "599d05fc6ffa4d3aa0f07bb6da8049c1000a220a:index.html"], {cwd:root,encoding:"utf8"});
 
 const harness = String.raw`
 const els=new Map(),timers=[],renders=[];
@@ -26,15 +26,16 @@ class El {
  remove(){if(this.parent)this.parent.removeChild(this);}
  addEventListener(k,f){(this.listeners[k]??=[]).push(f);}
  fire(k){for(const f of this.listeners[k]||[])f({target:this});}
+ dispatchEvent(event){this.fire(event.type);return true;}
  cloneNode(){const el=new El(this.tag);el.min=this.min;el.max=this.max;el.required=this.required;return el;}
  setAttribute(k,v){(this.attrs??={})[k]=String(v);}
  focus(){document.activeElement=this;} select(){} setSelectionRange(){} scrollIntoView(){}
 }
 const document={getElementById:id=>els.get(id)||null,createElement:t=>new El(t),querySelector:()=>null,body:new El(),activeElement:null,execCommand:()=>{if(fallbackMode==="throw")throw Error("denied");return fallbackMode==="success";}};
-for(const m of HTML.matchAll(/<(input|select|div|button|p)[^>]*\bid="([^"]+)"[^>]*>/g)){const el=new El(m[1]);el.id=m[2];for(const attr of ["min","max"])el[attr]=m[0].match(new RegExp(attr+'="([^"]*)"'))?.[1]||"";el.required=/\brequired\b/.test(m[0]);for(const cls of (m[0].match(/class="([^"]*)"/)?.[1]||"").split(/\s+/).filter(Boolean))el.classList.add(cls);els.set(m[2],el);}
+for(const m of HTML.matchAll(/<(input|select|div|button|p|section|summary|details)[^>]*\bid="([^"]+)"[^>]*>/g)){const el=new El(m[1]);el.id=m[2];for(const attr of ["min","max"])el[attr]=m[0].match(new RegExp(attr+'="([^"]*)"'))?.[1]||"";el.required=/\brequired\b/.test(m[0]);for(const cls of (m[0].match(/class="([^"]*)"/)?.[1]||"").split(/\s+/).filter(Boolean))el.classList.add(cls);els.set(m[2],el);}
 for(const match of HTML.matchAll(/<select[^>]*id="([^"]+)"[^>]*>([\s\S]*?)<\/select>/g)){
- const el=els.get(match[1]);for(const item of match[2].matchAll(/<option[^>]*value="([^"]*)"[^>]*>/g)){
- const opt=new El("option");opt.value=item[1];el.appendChild(opt);
+ const el=els.get(match[1]);for(const item of match[2].matchAll(/<option[^>]*value="([^"]*)"[^>]*>([^<]*)/g)){
+ const opt=new El("option");opt.value=item[1];opt.textContent=item[2];el.appendChild(opt);
  if(item[0].includes("selected"))el.value=item[1];
  }
 }
@@ -45,7 +46,7 @@ const localStorage={
 getItem:key=>{if(STORAGE_MODE==="read-denied")throw Error("SecurityError");return key==="khadra-t:last-selection:v1"?stored:collectionStore[key]??null;},
 setItem:(key,value)=>{if(STORAGE_MODE==="write-denied")throw Error("QuotaExceededError");if(key==="khadra-t:last-selection:v1"){writes++;stored=value;}else{collectionWrites++;collectionStore[key]=value;}}
 };
-const api=Function("document","window","navigator","Image","setTimeout","localStorage",SOURCE+";return {SIMPLE_TEAS,BRANDED_TEAS,getTeaCatalogItems,getCurrentCatalogItem,selectTeaCard,getSelectedTeaObject,getManualTeaObject,getResultText,render,renderTeaCatalog,setWaterPreset,updateModeUI,smartNumber,bindActionButtons"+(SOURCE.includes("function getCalculation")?",getCalculation,roundedProductText,readNumericInput,copyResultText":"")+(SOURCE.includes("function initializeBrewCollections")?",toggleCurrentFavorite,selectFavoriteTea,recordRecentBrew,restoreRecentBrew,normalizeRecentBrew,collections:()=>({favorites:favoriteTeas,recent:recentBrews})":"")+"};")(document,window,navigator,class{},f=>timers.push(f),localStorage);
+const api=Function("document","window","navigator","Image","setTimeout","localStorage","Event",SOURCE+";return {SIMPLE_TEAS,BRANDED_TEAS,getTeaCatalogItems,getCurrentCatalogItem,selectTeaCard,getSelectedTeaObject,getManualTeaObject,getResultText,render,renderTeaCatalog,setWaterPreset,updateModeUI,smartNumber,bindActionButtons"+(SOURCE.includes("function getCalculation")?",getCalculation,roundedProductText,readNumericInput,copyResultText":"")+(SOURCE.includes("function initializeBrewCollections")?",toggleCurrentFavorite,selectFavoriteTea,recordRecentBrew,restoreRecentBrew,normalizeRecentBrew,collections:()=>({favorites:favoriteTeas,recent:recentBrews})":"")+"};")(document,window,navigator,class{},f=>timers.push(f),localStorage,Event);
 const flush=()=>{while(timers.length)timers.shift()();};
 const e=id=>els.get(id);
 function setMode(mode){const el=e("modeSelect");if(!el.options.some(o=>o.value===mode)){const o=new El("option");o.value=mode;el.appendChild(o);}el.value=mode;api.updateModeUI();}
@@ -355,11 +356,59 @@ for(const mode of ["read-denied","write-denied"]){
 return {featureAssertions:checks,failures:0};
 `;
 
+const presentationSuite = String.raw`
+let checks = 0;
+const assert = (value, message) => { checks++; if (!value) throw Error(message); };
+const s=create();
+assert(s.e("tasteTabs").children.length===3,"taste UI does not match source options");
+for(const button of s.e("tasteTabs").children){
+ button.fire("click");
+ assert(s.state().taste===button.value,"taste button bypasses existing select");
+ assert(button.attrs["aria-pressed"]==="true","taste state missing");
+}
+const oldHistory=s.dump()["khadra-t:recent-brews:v1"];
+s.e("calculateBtn").fire("click");
+assert(s.dump()["khadra-t:recent-brews:v1"]===oldHistory,"calculate presentation adds history");
+const before=s.state().text;
+for(const id of ["navFavorites","navRecent","navCalculator"]){
+ s.e(id).fire("click");
+ assert(s.e(id).attrs["aria-current"]==="page","navigation active state");
+ assert(s.state().text===before,"navigation changes calculation");
+}
+const item=s.api.getTeaCatalogItems().find(i=>i.typeId==="munais-bop1");
+s.api.selectTeaCard(item);s.api.toggleCurrentFavorite();
+const card=s.e("favoriteList").children[0].children[0];
+assert(card.children[0].children[0].children[0].src===item.image,"favorite uses wrong image");
+assert(card.children[0].children[1].children[1].textContent===item.teaType,"favorite subtype label");
+s.e("navFavorites").fire("click");card.fire("click");
+assert(s.e("navCalculator").attrs["aria-current"]==="page","favorite stays in secondary view");
+s.e("navRecent").fire("click");s.e("recentBrewList").children[0].fire("click");
+assert(s.e("navCalculator").attrs["aria-current"]==="page","recent stays in secondary view");
+s.e("customWaterBtn").fire("click");
+s.e("calculateBtn").fire("click");
+assert(s.state().text==="","calculate shows stale invalid output");
+assert(!s.e("copyBtn")&&!s.e("waBtn"),"invalid actions reintroduced");
+return {presentationAssertions:checks,failures:0};
+`;
+
 const source = html => html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const run = (html, suite) => Function("HTML","SOURCE","INITIAL","STORAGE_MODE","COLLECTIONS",harness+suite)(html,source(html),null,"normal",{});
 const make = html => (raw=null,mode="normal",collections={}) =>
   Function("HTML","SOURCE","INITIAL","STORAGE_MODE","COLLECTIONS",harness+sessionReturn)(html,source(html),raw,mode,collections);
 (async()=>{
+  const getFunctions = html => Object.fromEntries([...source(html).matchAll(/^function (\w+)\([^]*?^\}/gm)].map(m=>[m[1],m[0]]));
+  const beforeFunctions=getFunctions(baseline), afterFunctions=getFunctions(current);
+  const presentationChanges=new Set(["renderFavoriteTeas","renderRecentBrews","selectTeaCard","render"]);
+  let protectedFunctions=0;
+  for(const [name,code] of Object.entries(beforeFunctions)){
+    if(!presentationChanges.has(name)){
+      if(afterFunctions[name]!==code)throw Error("Protected function changed: "+name);
+      protectedFunctions++;
+    }
+  }
+  if(source(baseline).split("const imageCache")[0]!==source(current).split("const imageCache")[0])throw Error("Tea data changed");
+  if(baseline.split("<style>")[0]!==current.split("<style>")[0])throw Error("Head/PWA changed");
+  console.log({protectedFunctions,teaDataIdentical:true,headAndPwaIdentical:true});
   const before=run(baseline,calculationSuite),after=run(current,calculationSuite);
   if(JSON.stringify(before)!==JSON.stringify(after))throw Error("baseline mismatch");
   console.log({calculationCases:after.records.length,transitions:after.transitions,baselineEqual:true});
@@ -370,4 +419,5 @@ const make = html => (raw=null,mode="normal",collections={}) =>
     create,createBaseline,()=>{const s=create();s.api.setWaterPreset(500);return s;}
   ));
   console.log(Function("create",featureSuite)(create));
+  console.log(Function("create",presentationSuite)(create));
 })().catch(error=>{console.error(error);process.exitCode=1;});
