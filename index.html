@@ -1506,6 +1506,13 @@
     }
 
 
+    /* Minimal controls for saved tea inputs. */
+    .brew-collections { margin-top: 16px; }
+    .brew-collections summary { cursor: pointer; padding: 12px 0; }
+    .brew-saved-list { display: grid; gap: 8px; margin: 8px 0; }
+    .brew-saved-row { display: flex; gap: 8px; }
+    .brew-saved-row > :first-child { flex: 1; min-width: 0; }
+    .brew-saved-list .actionBtn { text-align: right; overflow-wrap: anywhere; }
   </style>
 </head>
 
@@ -1618,6 +1625,20 @@
 
         <div>
           <div class="out" id="output" aria-live="polite"></div>
+
+          <div class="brew-collections">
+            <button type="button" id="favoriteToggle" class="actionBtn" aria-pressed="false">♡ إضافة إلى المفضلة</button>
+            <details>
+              <summary>المفضلة</summary>
+              <div id="favoriteList" class="brew-saved-list"></div>
+            </details>
+            <details>
+              <summary>آخر الخدرات</summary>
+              <div id="recentBrewList" class="brew-saved-list"></div>
+              <button type="button" id="clearRecentBrews" class="actionBtn">مسح سجل الخدرات</button>
+            </details>
+            <p id="brewStorageNotice" class="muted2" role="status"></p>
+          </div>
 
           <div class="tip-card">
             <i data-lucide="lightbulb"></i>
@@ -1905,6 +1926,233 @@ function restoreLastSelection() {
   return true;
 }
 
+// Favorites and recent brews use independent, versioned input-only stores.
+const FAVORITES_KEY = "khadra-t:favorites:v1";
+const RECENT_BREWS_KEY = "khadra-t:recent-brews:v1";
+let favoriteTeas = [];
+let recentBrews = [];
+let brewCollectionsReady = false;
+
+function readBrewCollection(key) {
+  try {
+    const data = JSON.parse(localStorage.getItem(key));
+    return data && data.version === 1 && Array.isArray(data.items) ? data.items : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeBrewCollection(key, items) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ version: 1, items }));
+    document.getElementById("brewStorageNotice").textContent = "";
+  } catch {
+    document.getElementById("brewStorageNotice").textContent =
+      "تعذر الحفظ على الجهاز؛ التغييرات متاحة خلال هذه الجلسة فقط.";
+  }
+}
+
+function resolveSavedTea(value) {
+  if (!value || typeof value !== "object") return null;
+  return getTeaCatalogItems().find((item) => item.value === value.product &&
+    (item.typeId ? item.typeId === value.subtype : value.subtype == null)) || null;
+}
+
+function teaIdentity(item) {
+  return { product: item.value, subtype: item.typeId || null };
+}
+
+function sameSavedTea(a, b) {
+  return a.product === b.product && a.subtype === b.subtype;
+}
+
+function normalizeRecentBrew(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const numeric = (input, raw) => {
+    const valid = storedNumericValue(input, raw);
+    return valid === null ? null : String(Number(valid));
+  };
+  const waterMl = numeric(waterMlInp, value.waterMl);
+  if (waterMl === null) return null;
+  const waterMode = value.waterMode === "custom" ||
+    (waterMl !== "500" && waterMl !== "1000") ? "custom" : "preset";
+  if (value.mode === "tea") {
+    const item = resolveSavedTea(value);
+    if (!item || !Array.from(tasteSel.options).some((o) => o.value === value.taste)) return null;
+    return { mode: "tea", ...teaIdentity(item), taste: value.taste, waterMl, waterMode };
+  }
+  if (value.mode !== "manual") return null;
+  const teaPerLiter = numeric(manualTeaPerLiter, value.teaPerLiter);
+  const sugarPerLiter = numeric(manualSugarPerLiter, value.sugarPerLiter);
+  const steepMinutes = value.steepMinutes == null ? "" : value.steepMinutes;
+  if (teaPerLiter === null || sugarPerLiter === null ||
+      typeof steepMinutes !== "string" || storedSteepText(steepMinutes) !== steepMinutes) return null;
+  return { mode: "manual", teaPerLiter, sugarPerLiter, steepMinutes, waterMl, waterMode };
+}
+
+function updateFavoriteButton() {
+  const button = document.getElementById("favoriteToggle");
+  const item = getCurrentCatalogItem();
+  const active = item && favoriteTeas.some((entry) => sameSavedTea(entry, teaIdentity(item)));
+  button.classList.toggle("hidden", modeSelect.value === "manual");
+  button.textContent = active ? "♥ إزالة من المفضلة" : "♡ إضافة إلى المفضلة";
+  button.setAttribute("aria-pressed", String(Boolean(active)));
+}
+
+function toggleCurrentFavorite() {
+  if (modeSelect.value !== "tea") return;
+  const item = getCurrentCatalogItem();
+  if (!item) return;
+  const identity = teaIdentity(item);
+  const index = favoriteTeas.findIndex((entry) => sameSavedTea(entry, identity));
+  if (index < 0) favoriteTeas.push(identity);
+  else favoriteTeas.splice(index, 1);
+  writeBrewCollection(FAVORITES_KEY, favoriteTeas);
+  renderFavoriteTeas();
+}
+
+function selectFavoriteTea(identity) {
+  const item = resolveSavedTea(identity);
+  if (!item) return;
+  // Set product and subtype before the mode update can render anything.
+  teaSelect.value = item.value;
+  syncTeaTypes(item.typeId);
+  modeSelect.value = "tea";
+  updateModeUI();
+  recordRecentBrew();
+}
+
+function renderFavoriteTeas() {
+  const list = document.getElementById("favoriteList");
+  list.innerHTML = "";
+  favoriteTeas.forEach((identity) => {
+    const item = resolveSavedTea(identity);
+    if (!item) return;
+    const row = document.createElement("div");
+    row.className = "brew-saved-row";
+    const select = document.createElement("button");
+    select.type = "button";
+    select.className = "actionBtn";
+    select.textContent = item.label;
+    select.addEventListener("click", () => selectFavoriteTea(identity));
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "actionBtn";
+    remove.textContent = "إزالة";
+    remove.setAttribute("aria-label", "إزالة " + item.label + " من المفضلة");
+    remove.addEventListener("click", () => {
+      favoriteTeas = favoriteTeas.filter((entry) => !sameSavedTea(entry, identity));
+      writeBrewCollection(FAVORITES_KEY, favoriteTeas);
+      renderFavoriteTeas();
+    });
+    row.appendChild(select);
+    row.appendChild(remove);
+    list.appendChild(row);
+  });
+  if (!list.children.length) list.textContent = "لا توجد أنواع في المفضلة بعد.";
+  updateFavoriteButton();
+}
+
+function recordRecentBrew() {
+  if (!brewCollectionsReady) return;
+  let entry;
+  try {
+    getCalculation(); // Respect live validity, including incomplete number input.
+    const water = { waterMl: waterMlInp.value,
+      waterMode: waterMlInp.classList.contains("hidden") ? "preset" : "custom" };
+    entry = normalizeRecentBrew(modeSelect.value === "manual" ? {
+      mode: "manual", teaPerLiter: manualTeaPerLiter.value,
+      sugarPerLiter: manualSugarPerLiter.value,
+      steepMinutes: manualSteepMinutes.value.trim(), ...water
+    } : {
+      mode: "tea", ...teaIdentity(getCurrentCatalogItem()), taste: tasteSel.value, ...water
+    });
+  } catch {
+    return;
+  }
+  if (!entry || JSON.stringify(entry) === JSON.stringify(recentBrews[0])) return;
+  recentBrews = [entry, ...recentBrews].slice(0, 10);
+  writeBrewCollection(RECENT_BREWS_KEY, recentBrews);
+  renderRecentBrews();
+}
+
+function restoreRecentBrew(value) {
+  const entry = normalizeRecentBrew(value);
+  if (!entry) return;
+  if (entry.mode === "tea") {
+    teaSelect.value = entry.product;
+    syncTeaTypes(entry.subtype);
+    tasteSel.value = entry.taste;
+  } else {
+    manualTeaPerLiter.value = entry.teaPerLiter;
+    manualSugarPerLiter.value = entry.sugarPerLiter;
+    manualSteepMinutes.value = entry.steepMinutes;
+  }
+  modeSelect.value = entry.mode;
+  waterMlInp.value = entry.waterMl;
+  const custom = entry.waterMode === "custom";
+  water1000Btn.classList.toggle("active", !custom && entry.waterMl === "1000");
+  water500Btn.classList.toggle("active", !custom && entry.waterMl === "500");
+  customWaterBtn.classList.remove("active");
+  customWaterBtn.classList.toggle("hidden", custom);
+  waterMlInp.classList.toggle("hidden", !custom);
+  waterMlInp.classList.toggle("active", custom);
+  updateModeUI(); // First render sees all restored inputs; last-selection saves normally.
+  recordRecentBrew();
+}
+
+function renderRecentBrews() {
+  const list = document.getElementById("recentBrewList");
+  list.innerHTML = "";
+  recentBrews.forEach((entry) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "actionBtn";
+    const description = entry.mode === "tea"
+      ? resolveSavedTea(entry).label + " · " + tasteLabel(entry.taste)
+      : "وزنة يدوية · شاي " + entry.teaPerLiter + " جم/لتر · سكر " +
+        entry.sugarPerLiter + " جم/لتر" + (entry.steepMinutes ? " · " + entry.steepMinutes : "");
+    button.textContent = description + " · " + entry.waterMl + " مل";
+    button.addEventListener("click", () => restoreRecentBrew(entry));
+    list.appendChild(button);
+  });
+  if (!list.children.length) list.textContent = "لا توجد خدرات سابقة بعد.";
+  document.getElementById("clearRecentBrews").disabled = !recentBrews.length;
+}
+
+function initializeBrewCollections() {
+  readBrewCollection(FAVORITES_KEY).forEach((value) => {
+    const item = resolveSavedTea(value);
+    if (item && !favoriteTeas.some((entry) => sameSavedTea(entry, teaIdentity(item)))) {
+      favoriteTeas.push(teaIdentity(item));
+    }
+  });
+  readBrewCollection(RECENT_BREWS_KEY).forEach((value) => {
+    const entry = normalizeRecentBrew(value);
+    if (entry && recentBrews.length < 10 &&
+        JSON.stringify(entry) !== JSON.stringify(recentBrews[recentBrews.length - 1])) {
+      recentBrews.push(entry);
+    }
+  });
+  document.getElementById("favoriteToggle").addEventListener("click", toggleCurrentFavorite);
+  document.getElementById("clearRecentBrews").addEventListener("click", () => {
+    recentBrews = [];
+    writeBrewCollection(RECENT_BREWS_KEY, recentBrews);
+    renderRecentBrews();
+  });
+  // Commit typed inputs on change, not each keystroke or internal render.
+  [modeSelect, teaSelect, typeSelect, tasteSel, waterMlInp,
+    manualTeaPerLiter, manualSugarPerLiter, manualSteepMinutes].forEach((input) => {
+    input.addEventListener("change", recordRecentBrew);
+  });
+  [modeTeaBtn, modeManualBtn, water500Btn, water1000Btn].forEach((button) => {
+    button.addEventListener("click", recordRecentBrew);
+  });
+  renderFavoriteTeas();
+  renderRecentBrews();
+  brewCollectionsReady = true;
+}
+
 function syncModeButtons() {
   const isManual = modeSelect.value === "manual";
   modeTeaBtn.classList.toggle("active", !isManual);
@@ -2015,6 +2263,7 @@ function selectTeaCard(item) {
   syncTeaTypes(item.typeId);
   renderTeaCatalog(teaSearch.value);
   render();
+  recordRecentBrew();
   document.getElementById("output")?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
@@ -2257,6 +2506,7 @@ function bindActionButtons() {
 }
 
 function render() {
+  if (brewCollectionsReady) updateFavoriteButton();
   try {
     const { teaObj, teaGrams, sugarText, cups } = getCalculation();
     tasteHint.textContent = "";
@@ -2411,6 +2661,7 @@ preloadInitialTeaImages();
 if (!lastSelectionRestored) setWaterPreset(1000);
 render();
 selectionStorageReady = true;
+initializeBrewCollections();
 
 if (window.lucide) lucide.createIcons();
 </script>
