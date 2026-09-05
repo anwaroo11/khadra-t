@@ -1579,7 +1579,7 @@
                   class="waterBtn customInput hidden"
                   type="number"
                   inputmode="decimal"
-                  min="1"
+                  min="1" max="100000" step="any" required
                   placeholder="مثلاً 780"
                 />
               </div>
@@ -1598,14 +1598,14 @@
 
             <div id="manualModeBlock" class="hidden">
               <label>وزن الشاي لكل 1 لتر</label>
-              <input id="manualTeaPerLiter" type="number" inputmode="decimal" min="0" step="0.1" placeholder="مثال: 12" />
+              <input id="manualTeaPerLiter" type="number" inputmode="decimal" min="0.1" max="1000" step="any" required placeholder="مثال: 12" />
               <div class="muted2">اكتب الوزنة اللي تعرفها لكل لتر</div>
             </div>
 
             <div id="manualSugarWrap" class="hidden">
-              <label>السكر لكل 1 لتر (اختياري)</label>
-              <input id="manualSugarPerLiter" type="number" inputmode="decimal" min="0" step="0.1" placeholder="مثال: 50" />
-              <div class="muted2">إذا تركته فاضي، بيطلع بدون سكر</div>
+              <label>السكر لكل 1 لتر</label>
+              <input id="manualSugarPerLiter" type="number" inputmode="decimal" min="0" max="2000" step="any" required placeholder="مثال: 50" />
+              <div class="muted2">اكتب 0 إذا تبيه بدون سكر</div>
             </div>
 
             <div id="manualSteepWrap" class="hidden">
@@ -1728,16 +1728,47 @@ function activateMainTeaImage(src) {
 }
 
 
-function smartNumber(n) {
-  if (!Number.isFinite(n)) return "-";
-  const isInt = Math.abs(n - Math.round(n)) < 1e-9;
-  return isInt ? String(Math.round(n)) : n.toFixed(1);
+// Decimal half-up rounding: multiply exact decimal fractions before rounding.
+function decimalFraction(value) {
+  if (!Number.isFinite(Number(value)) || Number(value) < 0) {
+    throw new Error("قيمة رقمية غير صالحة.");
+  }
+  const [mantissa, exponent = "0"] = String(value).toLowerCase().split("e");
+  const parts = mantissa.split(".");
+  const coefficient = BigInt(parts.join("").replace(/^\+/, ""));
+  const scale = (parts[1] || "").length - Number(exponent);
+  return scale >= 0
+    ? { numerator: coefficient, denominator: 10n ** BigInt(scale) }
+    : { numerator: coefficient * 10n ** BigInt(-scale), denominator: 1n };
 }
 
-function toLitersFromMl(ml) {
-  const v = Number(ml);
-  if (!Number.isFinite(v) || v <= 0) return NaN;
-  return v / 1000;
+function roundedProductText(base, quantity = 1, divisor = 1) {
+  const a = decimalFraction(base);
+  const b = decimalFraction(quantity);
+  const d = decimalFraction(divisor);
+  const numerator = a.numerator * b.numerator * d.denominator;
+  const denominator = a.denominator * b.denominator * d.numerator;
+  if (denominator <= 0n) throw new Error("قيمة رقمية غير صالحة.");
+  const tenths = (numerator * 20n + denominator) / (denominator * 2n);
+  // Preserve the previous integer/one-decimal presentation convention.
+  if (numerator % denominator === 0n) return String(tenths / 10n);
+  return String(tenths / 10n) + "." + String(tenths % 10n);
+}
+
+function smartNumber(n) {
+  if (!Number.isFinite(n) || n < 0) return "-";
+  return roundedProductText(n);
+}
+
+function readNumericInput(input, label) {
+  const raw = input.value.trim();
+  const value = Number(raw);
+  if (!raw || input.validity.badInput || !input.validity.valid ||
+      !/^[+]?((\d+(\.\d*)?)|(\.\d+))([eE][+-]?\d+)?$/.test(raw) ||
+      !Number.isFinite(value) || value < Number(input.min) || value > Number(input.max)) {
+    throw new Error("أدخل " + label + " صحيحة بين " + input.min + " و" + input.max + ".");
+  }
+  return value;
 }
 
 function minutesText(r) {
@@ -1864,28 +1895,33 @@ function getCurrentCatalogItem() {
   }) || items.find((item) => item.value === currentVal) || items[0] || null;
 }
 
-function selectTeaCard(item) {
-  // لا نغيّر نص البحث عند اختيار الشاي حتى تبقى القائمة كما هي
-  updateClearButton();
-
-  if (item.type === "simple") {
-    teaSelect.value = item.value;
-    typeWrap.classList.add("hidden");
-    renderTeaCatalog(teaSearch.value);
-    render();
-    document.getElementById("output")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    return;
+function syncTeaTypes(preferredType) {
+  const brand = BRANDED_TEAS.find((b) => `brand:${b.brandId}` === teaSelect.value);
+  typeWrap.classList.toggle("hidden", modeSelect.value === "manual" || !brand);
+  if (!brand) return;
+  const selected = preferredType || typeSelect.value;
+  const ids = Array.from(typeSelect.options).map((o) => o.value);
+  if (ids.length !== brand.items.length ||
+      ids.some((id, index) => id !== brand.items[index].id)) {
+    typeSelect.innerHTML = "";
+    brand.items.forEach((it) => {
+      const option = document.createElement("option");
+      option.value = it.id;
+      option.textContent = it.teaType;
+      typeSelect.appendChild(option);
+    });
   }
+  typeSelect.value = brand.items.some((it) => it.id === selected)
+    ? selected : brand.items[0].id;
+}
 
+function selectTeaCard(item) {
+  updateClearButton();
   teaSelect.value = item.value;
+  syncTeaTypes(item.typeId);
+  renderTeaCatalog(teaSearch.value);
   render();
-
-  setTimeout(() => {
-    typeSelect.value = item.typeId;
-    renderTeaCatalog(teaSearch.value);
-    render();
-    document.getElementById("output")?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, 0);
+  document.getElementById("output")?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function teaTypeClass(type) {
@@ -2000,23 +2036,7 @@ function getSelectedTeaObject() {
     const brandId = val.replace("brand:", "");
     const brand = BRANDED_TEAS.find((b) => b.brandId === brandId) || BRANDED_TEAS[0];
 
-    typeWrap.classList.remove("hidden");
-
-    const existingIds = Array.from(typeSelect.options).map((o) => o.value);
-    const shouldRebuild =
-      existingIds.length !== brand.items.length ||
-      (existingIds[0] && !brand.items.some((it) => it.id === existingIds[0]));
-
-    if (shouldRebuild) {
-      typeSelect.innerHTML = "";
-      brand.items.forEach((it) => {
-        const opt = document.createElement("option");
-        opt.value = it.id;
-        opt.textContent = it.teaType;
-        typeSelect.appendChild(opt);
-      });
-      typeSelect.value = brand.items[0].id;
-    }
+    syncTeaTypes();
 
     const selectedItem = brand.items.find((it) => it.id === typeSelect.value) || brand.items[0];
 
@@ -2033,20 +2053,14 @@ function getSelectedTeaObject() {
 }
 
 function getManualTeaObject() {
-  const teaBase = Number(manualTeaPerLiter.value);
-  const sugarBase = Number(manualSugarPerLiter.value);
+  const teaBase = readNumericInput(manualTeaPerLiter, "وزنة شاي لكل لتر");
+  const sugarBase = readNumericInput(manualSugarPerLiter, "وزنة سكر لكل لتر");
   const steepText = manualSteepMinutes.value.trim();
-
-  if (!Number.isFinite(teaBase) || teaBase <= 0) return null;
-
-  const sugarPerLiterPicked =
-    Number.isFinite(sugarBase) && sugarBase >= 0 ? sugarBase : 0;
-
   return {
     brandLabel: "إدخال يدوي",
     teaType: "وزنة مخصصة",
     teaPerLiterPicked: teaBase,
-    sugarPerLiterPicked,
+    sugarPerLiterPicked: sugarBase,
     steepMinutes: steepText || "-"
   };
 }
@@ -2055,29 +2069,32 @@ function getCurrentTeaObject() {
   return modeSelect.value === "manual" ? getManualTeaObject() : getSelectedTeaObject();
 }
 
-function getResultText() {
-  const liters = toLitersFromMl(waterMlInp.value);
-  if (!Number.isFinite(liters)) return "";
-
+function getCalculation() {
+  const waterMl = readNumericInput(waterMlInp, "كمية ماء بالمل");
   const teaObj = getCurrentTeaObject();
-  if (!teaObj) return "";
-
-  const tasteText = modeSelect.value === "manual"
-    ? "حسب الوزنة"
-    : tasteLabel(tasteSel.value);
-
-  const teaTypeText = teaObj.teaType ? ` (${teaObj.teaType})` : "";
-  const teaGrams = smartNumber(teaObj.teaPerLiterPicked * liters);
-  const sugarGrams = teaObj.sugarPerLiterPicked * liters;
-
-  let sugarText = "—";
-  if (teaObj.sugarPerLiterPicked === 0) {
-    sugarText = "بدون سكر";
-  } else if (teaObj.sugarPerLiterPicked) {
-    sugarText = `${smartNumber(sugarGrams)} جم`;
+  if (!teaObj) throw new Error("اختر نوع شاي من القائمة.");
+  const teaBase = teaObj.teaPerLiterPicked;
+  const sugarBase = teaObj.sugarPerLiterPicked;
+  if (!Number.isFinite(teaBase) || teaBase <= 0 ||
+      !Number.isFinite(sugarBase) || sugarBase < 0 ||
+      !Number.isFinite(teaBase * (waterMl / 1000)) ||
+      !Number.isFinite(sugarBase * (waterMl / 1000))) {
+    throw new Error("قيم الحساب غير صالحة.");
   }
+  return {
+    teaObj,
+    teaGrams: roundedProductText(teaBase, waterMl, 1000),
+    sugarText: sugarBase === 0 ? "بدون سكر" : `${roundedProductText(sugarBase, waterMl, 1000)} جم`,
+    cups: roundedProductText(waterMl, 1, CUP_ML)
+  };
+}
 
-  const cups = smartNumber(Number(waterMlInp.value) / CUP_ML);
+function getResultText() {
+  let calculation;
+  try { calculation = getCalculation(); } catch { return ""; }
+  const { teaObj, teaGrams, sugarText, cups } = calculation;
+  const tasteText = modeSelect.value === "manual" ? "حسب الوزنة" : tasteLabel(tasteSel.value);
+  const teaTypeText = teaObj.teaType ? ` (${teaObj.teaType})` : "";
 
   return `
 ☕ خدرة شاي
@@ -2096,68 +2113,61 @@ https://khadra-t.netlify.app/
 `.trim();
 }
 
+async function copyResultText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const ta = document.createElement("textarea");
+    const previousFocus = document.activeElement;
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    try {
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      return document.execCommand("copy") === true;
+    } catch {
+      return false;
+    } finally {
+      ta.remove();
+      if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+    }
+  }
+}
+
 function bindActionButtons() {
   const copyBtn = document.getElementById("copyBtn");
   const waBtn = document.getElementById("waBtn");
-
   if (copyBtn) {
     copyBtn.onclick = async () => {
       const text = getResultText();
-      if (!text) return;
-
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-      }
-
-      copyBtn.textContent = "تم النسخ ✓";
-      setTimeout(() => {
-        copyBtn.textContent = "نسخ النتيجة";
-      }, 1500);
+      if (!text) { render(); return; }
+      copyBtn.disabled = true;
+      const copied = await copyResultText(text);
+      copyBtn.disabled = false;
+      if (!copyBtn.isConnected) return;
+      copyBtn.textContent = copied ? "تم النسخ ✓" : "تعذر النسخ، حاول مرة ثانية";
+      setTimeout(() => { copyBtn.textContent = "نسخ النتيجة"; }, 1500);
     };
   }
-
   if (waBtn) {
     waBtn.onclick = () => {
-      const text = encodeURIComponent(getResultText());
-      if (!text) return;
-      window.location.href = `https://wa.me/?text=${text}`;
+      const text = getResultText();
+      if (!text) { render(); return; }
+      window.location.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
     };
   }
 }
 
 function render() {
   try {
-    const liters = toLitersFromMl(waterMlInp.value);
-    if (!Number.isFinite(liters)) {
-      output.innerHTML = `⚠️ دخل كمية ماء صحيحة بالمل.`;
-      return;
-    }
-
-    const teaObj = getCurrentTeaObject();
-    if (!teaObj) {
-      output.innerHTML = `⚠️ أدخل وزنة الشاي لكل لتر أو اختر نوع شاي من القائمة.`;
-      return;
-    }
-
+    const { teaObj, teaGrams, sugarText, cups } = getCalculation();
     tasteHint.textContent = "";
-
     const isManual = modeSelect.value === "manual";
     const taste = tasteSel.value;
-    const teaGrams = teaObj.teaPerLiterPicked * liters;
-    const sugarGrams = teaObj.sugarPerLiterPicked === 0 ? 0 : teaObj.sugarPerLiterPicked * liters;
-
-    const waterMl = Number(waterMlInp.value);
-    const cups = Number.isFinite(waterMl) && waterMl > 0 ? waterMl / CUP_ML : NaN;
-    const sugarText = teaObj.sugarPerLiterPicked === 0 ? "بدون سكر" : `${smartNumber(sugarGrams)} جم`;
     const teaTypeText = teaObj.teaType ? ` — ${teaObj.teaType}` : "";
 
     const catalogItem = isManual ? null : getCurrentCatalogItem();
@@ -2181,7 +2191,7 @@ function render() {
         <div class="showcase-metrics">
           <div class="metric-row">
             <div class="metric-label"><i data-lucide="scale"></i> وزن الشاي</div>
-            <div class="metric-value">${smartNumber(teaGrams)} جم</div>
+            <div class="metric-value">${teaGrams} جم</div>
           </div>
           <div class="metric-row">
             <div class="metric-label"><i data-lucide="candy"></i> السكر</div>
@@ -2193,7 +2203,7 @@ function render() {
           </div>
           <div class="metric-row">
             <div class="metric-label"><i data-lucide="coffee"></i> كم بيالة تكفي</div>
-            <div class="metric-value">${smartNumber(cups)} بيالات</div>
+            <div class="metric-value">${cups} بيالات</div>
           </div>
         </div>
       </div>
@@ -2213,12 +2223,7 @@ function render() {
     if (displayImage) activateMainTeaImage(displayImage);
     bindActionButtons();
   } catch (e) {
-    output.innerHTML = `
-      <div style="padding:12px;border-radius:12px;border:1px solid rgba(255,80,80,.35);background:rgba(255,80,80,.10)">
-        ⚠️ صار خطأ في البيانات.
-        <div style="opacity:.8;font-size:12px;margin-top:6px">تفاصيل: ${String(e.message || e)}</div>
-      </div>
-    `;
+    output.textContent = `⚠️ ${String(e.message || "قيم الحساب غير صالحة.")}`;
   }
 }
 
@@ -2289,6 +2294,7 @@ customWaterBtn.addEventListener("click", () => {
   waterMlInp.classList.remove("hidden");
   waterMlInp.classList.add("active");
   waterMlInp.value = "";
+  render();
   waterMlInp.focus();
 });
 
@@ -2297,12 +2303,8 @@ waterMlInp.addEventListener("input", () => {
 });
 
 waterMlInp.addEventListener("blur", () => {
-  if (!waterMlInp.value) {
-    waterMlInp.classList.add("hidden");
-    waterMlInp.classList.remove("active");
-    customWaterBtn.classList.remove("hidden");
-    customWaterBtn.classList.add("active");
-  }
+  // Keep an empty custom input visible so its error can be corrected.
+  render();
 });
 
 populateMainSelect();
