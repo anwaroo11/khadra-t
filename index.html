@@ -1811,6 +1811,100 @@ const manualTeaPerLiter = document.getElementById("manualTeaPerLiter");
 const manualSugarPerLiter = document.getElementById("manualSugarPerLiter");
 const manualSteepMinutes = document.getElementById("manualSteepMinutes");
 
+// Store inputs only; calculations and validation remain the source of truth.
+const LAST_SELECTION_KEY = "khadra-t:last-selection:v1";
+let selectionStorageReady = false;
+
+function storedNumericValue(input, value) {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  const candidate = input.cloneNode(false);
+  candidate.value = String(value);
+  try {
+    readNumericInput(candidate, "");
+    return candidate.value;
+  } catch {
+    return null;
+  }
+}
+
+function storedSteepText(value) {
+  // This free-text input is rendered by the existing page. Never persist markup.
+  return typeof value === "string" && value.length <= 200 &&
+    !/[<>\u0000-\u001f]/.test(value) ? value : "";
+}
+
+function saveLastSelection() {
+  if (!selectionStorageReady) return;
+  try {
+    // Called only after a successful render. Invalid drafts leave the last save intact.
+    const manualTea = storedNumericValue(manualTeaPerLiter, manualTeaPerLiter.value);
+    const manualSugar = storedNumericValue(manualSugarPerLiter, manualSugarPerLiter.value);
+    const state = {
+      version: 1,
+      mode: modeSelect.value,
+      product: teaSelect.value,
+      subtype: teaSelect.value.startsWith("brand:") ? typeSelect.value : null,
+      taste: tasteSel.value,
+      waterMl: waterMlInp.value,
+      waterMode: waterMlInp.classList.contains("hidden") ? "preset" : "custom",
+      manual: manualTea !== null && manualSugar !== null ? {
+        teaPerLiter: manualTea,
+        sugarPerLiter: manualSugar,
+        steepMinutes: storedSteepText(manualSteepMinutes.value.trim())
+      } : null
+    };
+    localStorage.setItem(LAST_SELECTION_KEY, JSON.stringify(state));
+  } catch {
+    // Storage may be blocked or full. The calculator must still work normally.
+  }
+}
+
+function restoreLastSelection() {
+  let state;
+  try {
+    state = JSON.parse(localStorage.getItem(LAST_SELECTION_KEY));
+  } catch {
+    return false;
+  }
+  if (!state || typeof state !== "object" || Array.isArray(state) || state.version !== 1) {
+    return false;
+  }
+
+  if (Array.from(teaSelect.options).some((option) => option.value === state.product)) {
+    teaSelect.value = state.product;
+  }
+  if (Array.from(tasteSel.options).some((option) => option.value === state.taste)) {
+    tasteSel.value = state.taste;
+  }
+
+  const manual = state.manual && typeof state.manual === "object" &&
+    !Array.isArray(state.manual) ? state.manual : {};
+  const tea = storedNumericValue(manualTeaPerLiter, manual.teaPerLiter);
+  const sugar = storedNumericValue(manualSugarPerLiter, manual.sugarPerLiter);
+  if (tea !== null) manualTeaPerLiter.value = tea;
+  if (sugar !== null) manualSugarPerLiter.value = sugar;
+  manualSteepMinutes.value = storedSteepText(manual.steepMinutes);
+  if (state.mode === "manual" && tea !== null && sugar !== null) {
+    modeSelect.value = "manual";
+  }
+
+  // Synchronize the saved product and subtype before any result can be rendered.
+  syncTeaTypes(typeof state.subtype === "string" ? state.subtype : undefined);
+
+  const water = storedNumericValue(waterMlInp, state.waterMl);
+  waterMlInp.value = water === null ? "1000" : water;
+  const amount = Number(waterMlInp.value);
+  const custom = water !== null &&
+    (state.waterMode === "custom" || (amount !== 500 && amount !== 1000));
+  water1000Btn.classList.toggle("active", !custom && amount === 1000);
+  water500Btn.classList.toggle("active", !custom && amount === 500);
+  customWaterBtn.classList.remove("active");
+  customWaterBtn.classList.toggle("hidden", custom);
+  waterMlInp.classList.toggle("hidden", !custom);
+  waterMlInp.classList.toggle("active", custom);
+  return true;
+}
+
 function syncModeButtons() {
   const isManual = modeSelect.value === "manual";
   modeTeaBtn.classList.toggle("active", !isManual);
@@ -2222,6 +2316,7 @@ function render() {
     if (window.lucide) lucide.createIcons();
     if (displayImage) activateMainTeaImage(displayImage);
     bindActionButtons();
+    saveLastSelection();
   } catch (e) {
     output.textContent = `⚠️ ${String(e.message || "قيم الحساب غير صالحة.")}`;
   }
@@ -2308,12 +2403,14 @@ waterMlInp.addEventListener("blur", () => {
 });
 
 populateMainSelect();
+const lastSelectionRestored = restoreLastSelection();
 updateClearButton();
 renderTeaCatalog("");
 updateModeUI();
 preloadInitialTeaImages();
-setWaterPreset(1000);
+if (!lastSelectionRestored) setWaterPreset(1000);
 render();
+selectionStorageReady = true;
 
 if (window.lucide) lucide.createIcons();
 </script>
