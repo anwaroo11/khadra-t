@@ -6,7 +6,7 @@ const path = require("node:path");
 const {execFileSync} = require("node:child_process");
 const root = path.resolve(__dirname, "..");
 const current = fs.readFileSync(path.join(root, "index.html"), "utf8");
-const baseline = execFileSync("git", ["show", "599d05fc6ffa4d3aa0f07bb6da8049c1000a220a:index.html"], {cwd:root,encoding:"utf8"});
+const baseline = execFileSync("git", ["show", "3385da7ee0ff92fc91fdf771369c028e895fa546:index.html"], {cwd:root,encoding:"utf8"});
 
 const harness = String.raw`
 const els=new Map(),timers=[],renders=[];
@@ -302,14 +302,18 @@ for(const entry of [teaEntry,manualEntry]){
 }
 {
  const s=create();s.e("water500").fire("click");
+ assert(s.api.collections().recent.length===0,"preset draft recorded");
+ s.e("calculateBtn").fire("click");
  assert(s.api.collections().recent.length===1,"preset not recorded");
  s.e("water500").fire("click");assert(s.api.collections().recent.length===1,"duplicate preset");
  s.e("customWaterBtn").fire("click");assert(s.api.collections().recent.length===1,"empty custom recorded");
  s.e("waterMl").value="780.5";s.e("waterMl").fire("input");
  assert(s.api.collections().recent.length===1,"keystroke recorded");
- s.e("waterMl").fire("change");assert(s.api.collections().recent.length===2,"custom commit not recorded");
- s.e("taste").value="medium";s.e("taste").fire("change");assert(s.api.collections().recent.length===3,"taste change missing");
- for(let i=1;i<=11;i++){s.e("waterMl").value=String(1000+i);s.e("waterMl").fire("input");s.e("waterMl").fire("change");}
+ s.e("waterMl").fire("change");assert(s.api.collections().recent.length===1,"custom change recorded");
+ s.e("calculateBtn").fire("click");assert(s.api.collections().recent.length===2,"calculate did not commit");
+ s.e("taste").value="medium";s.e("taste").fire("change");assert(s.api.collections().recent.length===2,"taste draft recorded");
+ s.e("calculateBtn").fire("click");assert(s.api.collections().recent.length===3,"taste commit missing");
+ for(let i=1;i<=11;i++){s.e("waterMl").value=String(1000+i);s.e("waterMl").fire("input");s.e("waterMl").fire("change");s.e("calculateBtn").fire("click");}
  assert(s.api.collections().recent.length===10,"history cap");
  assert(s.api.collections().recent[0].waterMl==="1011"&&s.api.collections().recent[9].waterMl==="1002","wrong eviction order");
  const older=s.api.collections().recent[5];s.api.restoreRecentBrew(older);
@@ -345,7 +349,7 @@ for(const mode of ["read-denied","write-denied"]){
  if(mode==="write-denied")assert(s.e("brewStorageNotice").textContent.includes("تعذر"),"silent save failure");
 }
 {
- const s=create();s.api.selectTeaCard(branded);s.api.toggleCurrentFavorite();s.api.restoreRecentBrew(manualEntry);
+ const s=create();s.api.selectTeaCard(branded);s.api.toggleCurrentFavorite();s.e("calculateBtn").fire("click");s.api.restoreRecentBrew(manualEntry);
  const data=s.dump(),fav=JSON.parse(data[FK]),history=JSON.parse(data[RK]);
  assert(fav.version===1&&history.version===1,"missing version");
  assert(Object.keys(fav.items[0]).sort().join(",")==="product,subtype","favorite contains extra inputs");
@@ -368,7 +372,8 @@ for(const button of s.e("tasteTabs").children){
 }
 const oldHistory=s.dump()["khadra-t:recent-brews:v1"];
 s.e("calculateBtn").fire("click");
-assert(s.dump()["khadra-t:recent-brews:v1"]===oldHistory,"calculate presentation adds history");
+assert(oldHistory===undefined,"taste previews create history");
+assert(s.api.collections().recent.length===1,"calculate fails to commit");
 const before=s.state().text;
 for(const id of ["navFavorites","navRecent","navCalculator"]){
  s.e(id).fire("click");
@@ -391,6 +396,44 @@ assert(!s.e("copyBtn")&&!s.e("waBtn"),"invalid actions reintroduced");
 return {presentationAssertions:checks,failures:0};
 `;
 
+
+const finalActionSuite = String.raw`
+let checks=0;
+const assert=(v,m)=>{checks++;if(!v)throw Error(m);};
+const s=create();
+s.e("customWaterBtn").fire("click");
+for(const value of ["1","10","100","1000","1001","1002","1003"]){
+ s.e("waterMl").value=value;
+ for(const event of ["input","change","blur"])s.e("waterMl").fire(event);
+ s.api.render();
+ assert(s.api.collections().recent.length===0,"typing/spinner/blur commits "+value);
+}
+s.e("calculateBtn").fire("click");
+assert(s.api.collections().recent.length===1&&s.api.collections().recent[0].waterMl==="1003","final water not committed");
+s.e("calculateBtn").fire("click");
+assert(s.api.collections().recent.length===1,"duplicate calculate");
+const r=create(s.saved(),"normal",s.dump());
+assert(r.api.collections().recent.length===1&&r.collectionWrites()===0,"reload commits");
+for(const value of ["","-1","Infinity","1e","100001"]){
+ r.e("waterMl").value=value;r.e("waterMl").fire("input");r.e("calculateBtn").fire("click");
+ assert(r.api.collections().recent.length===1,"invalid calculate commits");
+}
+r.e("water1000").fire("click");
+r.e("modeManualBtn").fire("click");
+r.e("manualTeaPerLiter").value="12.55";
+r.e("manualSugarPerLiter").value="0";
+for(const id of ["manualTeaPerLiter","manualSugarPerLiter"])for(const event of ["input","change","blur"])r.e(id).fire(event);
+assert(r.api.collections().recent.length===1,"manual drafts commit");
+r.e("calculateBtn").fire("click");
+assert(r.api.collections().recent[0].mode==="manual"&&r.api.collections().recent[0].sugarPerLiter==="0","manual zero final action");
+const tea=r.api.getTeaCatalogItems().find(i=>i.typeId==="munais-bop1");
+r.api.selectTeaCard(tea);
+assert(r.api.collections().recent.length===2,"catalog selection commits");
+r.api.selectFavoriteTea({product:tea.value,subtype:tea.typeId});
+assert(r.state().subtype===tea.typeId&&r.api.collections().recent.length===3,"favorite final action");
+return {finalActionAssertions:checks,failures:0};
+`;
+
 const source = html => html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const run = (html, suite) => Function("HTML","SOURCE","INITIAL","STORAGE_MODE","COLLECTIONS",harness+suite)(html,source(html),null,"normal",{});
 const make = html => (raw=null,mode="normal",collections={}) =>
@@ -398,7 +441,7 @@ const make = html => (raw=null,mode="normal",collections={}) =>
 (async()=>{
   const getFunctions = html => Object.fromEntries([...source(html).matchAll(/^function (\w+)\([^]*?^\}/gm)].map(m=>[m[1],m[0]]));
   const beforeFunctions=getFunctions(baseline), afterFunctions=getFunctions(current);
-  const presentationChanges=new Set(["renderFavoriteTeas","renderRecentBrews","selectTeaCard","render"]);
+  const presentationChanges=new Set(["initializeBrewCollections","selectTeaCard","initializeDashboard","appendTeaPresentation"]);
   let protectedFunctions=0;
   for(const [name,code] of Object.entries(beforeFunctions)){
     if(!presentationChanges.has(name)){
@@ -420,4 +463,5 @@ const make = html => (raw=null,mode="normal",collections={}) =>
   ));
   console.log(Function("create",featureSuite)(create));
   console.log(Function("create",presentationSuite)(create));
+  console.log(Function("create",finalActionSuite)(create));
 })().catch(error=>{console.error(error);process.exitCode=1;});
