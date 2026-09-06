@@ -59,14 +59,14 @@
 
     :root {
       color-scheme: light;
-      --bg: #f6f3ee;
-      --surface: #fffdfa;
-      --soft: #eee8df;
-      --primary: #896344;
-      --primary-hover: #745137;
-      --text: #302a25;
-      --muted: #756b61;
-      --border: #e5ddd3;
+      --bg: #f8f5ef;
+      --surface: #fffdf8;
+      --soft: #f0e9dd;
+      --primary: #922f38;
+      --primary-hover: #76232d;
+      --text: #302928;
+      --muted: #786e68;
+      --border: #e7dfd3;
       --radius: 18px;
     }
     * { box-sizing: border-box; }
@@ -85,15 +85,15 @@
     h2 { font-size: 19px; font-weight: 700; }
     .hidden { display: none !important; }
     .mode-select-hidden, .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-    .app-sidebar { position: fixed; inset-block: 0; inset-inline-start: 0; width: 216px; padding: 32px 20px; border-inline-end: 1px solid var(--border); background: #f0ebe3; display: flex; flex-direction: column; gap: 40px; z-index: 20; }
+    .app-sidebar { position: fixed; inset-block: 0; inset-inline-start: 0; width: 216px; padding: 32px 20px; border-inline-end: 1px solid var(--border); background: #f3eee5; display: flex; flex-direction: column; gap: 40px; z-index: 20; }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand img { width: 44px; height: 44px; border-radius: 12px; }
     .brand strong { display: block; font-size: 22px; }
     .brand small { color: var(--muted); font-size: 12px; }
     .app-nav { display: grid; gap: 8px; }
     .nav-button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; border-radius: 12px; background: transparent; text-align: start; }
-    .nav-button[aria-current="page"] { background: #e5dacb; color: #674a32; font-weight: 700; }
-    .nav-button:hover { background: #eae1d6; }
+    .nav-button[aria-current="page"] { background: #f0e1df; color: #812e36; font-weight: 700; }
+    .nav-button:hover { background: #f5e8e4; }
     .sidebar-footer { margin-block-start: auto; color: var(--muted); font-size: 13px; border-block-start: 1px solid var(--border); padding-block-start: 20px; }
     .app-main { margin-inline-start: 216px; }
     .wrap { max-width: 1250px; margin-inline: auto; padding: 36px clamp(20px, 3vw, 48px) 48px; }
@@ -103,7 +103,7 @@
     .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 24px; align-items: start; }
     .calculator-view, .brew-collections, .form-panel { min-width: 0; }
     .form-panel { display: grid; gap: 18px; }
-    .section-card, .result-card, .collection-card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 24px; box-shadow: 0 3px 16px #57442f04; }
+    .section-card, .result-card, .collection-card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 24px; box-shadow: 0 3px 16px #54402a04; }
     .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block-end: 20px; }
     .eyebrow { color: var(--muted); font-size: 13px; }
     .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
@@ -116,9 +116,9 @@
     .muted2:empty { display: none; }
     .mode-tabs, .taste-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .taste-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .mode-tab, .taste-tab, .waterBtn { border: 1px solid var(--border); border-radius: 10px; background: #f4f0ea; padding: 10px 6px; min-width: 0; text-align: center; font-size: 15px; }
+    .mode-tab, .taste-tab, .waterBtn { border: 1px solid var(--border); border-radius: 10px; background: #f4efe6; padding: 10px 6px; min-width: 0; text-align: center; font-size: 15px; }
     .mode-tab svg { width: 17px; margin-inline-end: 3px; }
-    .mode-tab.active, .taste-tab.active, .waterBtn.active { background: var(--primary); border-color: var(--primary); color: #fffdfa; }
+    .mode-tab.active, .taste-tab.active, .waterBtn.active { background: var(--primary); border-color: var(--primary); color: #fffdf8; }
     .water-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .customInput { font-size: 16px; grid-column: 1 / -1; background: var(--surface) !important; color: var(--text) !important; text-align: right; }
     .tea-picker-details { border: 1px solid var(--border); border-radius: 12px; padding: 0 10px; }
@@ -133,9 +133,9 @@
     .tea-suggest-head small { font-size: 12px; }
     .tea-results-list { display: grid; gap: 6px; max-height: 244px; overflow-y: auto; overscroll-behavior: contain; padding: 3px; }
     .tea-list-item { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; padding: 8px; border: 1px solid transparent; border-radius: 10px; background: #f7f4ef; text-align: start; }
-    .tea-list-item.active { border-color: #b69776; background: #f0e7db; }
-    .tea-list-thumb, .saved-thumb { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px; border-radius: 9px; background: #f3ede4; color: var(--muted); }
-    .tea-list-thumb img, .saved-thumb img { width: 44px; height: 44px; }
+    .tea-list-item.active { border-color: #c0a36c; background: #f7ece5; }
+    .tea-list-thumb, .saved-thumb { display: grid; place-items: center; width: 64px; height: 64px; flex: 0 0 64px; border-radius: 9px; background: #f2ecdf; color: var(--muted); }
+    .tea-list-thumb img, .saved-thumb img { width: 60px; height: 60px; }
     .tea-list-text, .saved-text { min-width: 0; flex: 1; }
     .tea-list-text b, .saved-text b { display: block; font-weight: 500; overflow-wrap: anywhere; }
     .tea-list-text em, .saved-text small { display: block; color: var(--muted); font-size: 13px; font-style: normal; overflow-wrap: anywhere; }
@@ -147,9 +147,9 @@
     .result-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-block-end: 12px; }
     .result-heading .actionBtn { padding: 6px 10px; font-size: 13px; background: transparent; border-color: transparent; color: var(--primary); }
     .out { overflow-wrap: anywhere; }
-    .showcase-product { display: grid; grid-template-columns: 48px minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 12px; padding-block-end: 14px; }
-    .showcase-image { grid-column: 1; grid-row: 1 / 3; width: 48px; height: 48px; display: grid; place-items: center; color: var(--primary); }
-    .showcase-image img { width: 48px; height: 48px; }
+    .showcase-product { display: grid; grid-template-columns: 104px minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 12px; padding-block-end: 14px; }
+    .showcase-image { grid-column: 1; grid-row: 1 / 3; width: 104px; height: 104px; display: grid; place-items: center; color: var(--primary); }
+    .showcase-image img { width: 104px; height: 104px; }
     .showcase-title { grid-column: 2; font-weight: 500; }
     .showcase-type { grid-column: 2; color: var(--muted); font-size: 13px; }
     .showcase-divider { height: 1px; background: var(--border); }
@@ -164,7 +164,7 @@
     .metric-row:nth-child(3) .metric-value { font-size: 18px; }
     .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-block-start: 12px; }
     .actionBtn { border: 1px solid var(--border); border-radius: 10px; background: var(--soft); padding: 10px 12px; font-weight: 500; min-width: 0; }
-    .actionBtn:hover { background: #e6dccc; }
+    .actionBtn:hover { background: #eadecb; }
     .note { margin-block-start: 16px; color: var(--muted); font-size: 13px; line-height: 1.8; }
     .tip-card { display: flex; align-items: start; gap: 8px; padding: 2px 6px; color: var(--muted); font-size: 13px; }
     .tip-card svg { width: 17px; margin-block-start: 3px; }
@@ -178,11 +178,15 @@
     .brew-saved-row > :first-child { flex: 1; min-width: 0; }
     .brew-saved-list .actionBtn { text-align: start; width: 100%; background: #faf7f2; border-radius: 12px; }
     .brew-saved-row .actionBtn { border: 0; background: transparent; }
-    .brew-saved-row .saved-remove { width: 44px; min-height: 48px; flex: 0 0 44px; padding: 4px; font-size: 23px; text-align: center; color: #aa6252; }
+    .brew-saved-row .saved-remove { width: 44px; min-height: 48px; flex: 0 0 44px; padding: 4px; font-size: 23px; text-align: center; color: #922f38; }
     .saved-content { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--text); }
     .saved-text small { line-height: 1.6; font-size: 12px; }
     #clearRecentBrews { margin-block-start: 16px; min-height: 44px; color: var(--muted); background: transparent; font-size: 13px; }
     #brewStorageNotice { grid-column: 1 / -1; }
+    /* View selection applies to Desktop as well as Mobile. */
+    body[data-view="favorites"] .calculator-view, body[data-view="recent"] .calculator-view { display: none; }
+    body[data-view="favorites"] #recentSection, body[data-view="recent"] #favoritesSection { display: none; }
+    body[data-view="favorites"] .dashboard-grid, body[data-view="recent"] .dashboard-grid { grid-template-columns: minmax(0, 1fr); max-width: 800px; }
     @media (min-width: 1024px) {
       .brew-saved-list { max-height: 450px; overflow-y: auto; padding: 2px; }
     }
@@ -194,7 +198,7 @@
       .section-card, .result-card, .collection-card { padding: 18px; }
     }
     @media (max-width: 1023px) {
-      .app-sidebar { inset-block-start: auto; inset-block-end: 0; inset-inline: 0; width: auto; padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px)); background: #fffdfaf5; border-inline-end: 0; border-block-start: 1px solid var(--border); }
+      .app-sidebar { inset-block-start: auto; inset-block-end: 0; inset-inline: 0; width: auto; padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px)); background: #fffdf8f5; border-inline-end: 0; border-block-start: 1px solid var(--border); }
       .app-sidebar .brand, .sidebar-footer { display: none; }
       .app-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; max-width: 640px; width: 100%; margin-inline: auto; }
       .nav-button { flex-direction: column; justify-content: center; gap: 3px; font-size: 12px; padding: 6px 3px; min-height: 56px; }
@@ -208,8 +212,6 @@
       .hero { margin-block-end: 20px; }
       .dashboard-grid { display: block; }
       body[data-view="calculator"] .brew-collections { display: none; }
-      body[data-view="favorites"] .calculator-view, body[data-view="recent"] .calculator-view { display: none; }
-      body[data-view="favorites"] #recentSection, body[data-view="recent"] #favoritesSection { display: none; }
       .collection-card { min-height: 150px; }
     }
     @media (max-width: 480px) {
@@ -226,6 +228,10 @@
       .metric-label { font-size: 12px; }
       .actions .actionBtn { font-size: 14px; padding-inline: 6px; }
       .result-heading .actionBtn { max-width: 65%; }
+      .tea-list-thumb, .saved-thumb { width: 56px; height: 56px; flex-basis: 56px; }
+      .tea-list-thumb img, .saved-thumb img { width: 52px; height: 52px; }
+      .showcase-product { grid-template-columns: 80px minmax(0, 1fr); }
+      .showcase-image, .showcase-image img { width: 80px; height: 80px; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   </style>
@@ -868,14 +874,7 @@ function initializeBrewCollections() {
     writeBrewCollection(RECENT_BREWS_KEY, recentBrews);
     renderRecentBrews();
   });
-  // Commit typed inputs on change, not each keystroke or internal render.
-  [modeSelect, teaSelect, typeSelect, tasteSel, waterMlInp,
-    manualTeaPerLiter, manualSugarPerLiter, manualSteepMinutes].forEach((input) => {
-    input.addEventListener("change", recordRecentBrew);
-  });
-  [modeTeaBtn, modeManualBtn, water500Btn, water1000Btn].forEach((button) => {
-    button.addEventListener("click", recordRecentBrew);
-  });
+  // Draft changes preview live; only explicit final actions commit a brew.
   renderFavoriteTeas();
   renderRecentBrews();
   brewCollectionsReady = true;
@@ -895,8 +894,8 @@ function appendTeaPresentation(container, item, title, detail) {
     img.alt = "";
     img.loading = "lazy";
     img.decoding = "async";
-    img.width = 44;
-    img.height = 44;
+    img.width = 60;
+    img.height = 60;
     img.addEventListener("error", () => {
       img.remove();
       thumb.textContent = "☕";
@@ -958,6 +957,7 @@ function initializeDashboard() {
   tasteSel.setAttribute("aria-hidden", "true");
   document.getElementById("calculateBtn").addEventListener("click", () => {
     render();
+    recordRecentBrew();
     document.getElementById("output").scrollIntoView({ block: "center" });
   });
   updateDashboardPresentation();
@@ -1074,7 +1074,6 @@ function selectTeaCard(item) {
   syncTeaTypes(item.typeId);
   renderTeaCatalog(teaSearch.value);
   render();
-  recordRecentBrew();
   document.getElementById("output")?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
