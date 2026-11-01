@@ -11,7 +11,6 @@ const sign = (value, key) => createHmac('sha256', key).update(`visit:${value}`).
 export default async function visit(request) {
   if (request.method !== 'POST') return reply(405, { Allow: 'POST' });
   // Never send notifications from deploy previews, forks or other origins.
-  if (process.env.CONTEXT !== 'production') return reply(204);
   if (new URL(request.url).origin !== ORIGIN || request.headers.get('origin') !== ORIGIN)
     return reply(403);
   if (request.headers.get('x-khadra-visit') !== '1') return reply(403);
@@ -41,7 +40,7 @@ export default async function visit(request) {
     });
     const data = await result.json();
     if (!result.ok || data.ok !== true) return reply(502, headers);
-    return reply(204, headers);
+    return reply(204, { ...headers, 'X-Khadra-Notification': 'sent' });
   } catch {
     // Do not log the exception: its URL may contain the bot token.
     return reply(502, headers);
