@@ -1,0 +1,14 @@
+{
+  "name": "khadra-t",
+  "private": true,
+  "description": "خدرة شاي — حاسبة الخدرة ولوحة التحكم",
+  "scripts": {
+    "test": "node tests/core-parity.cjs && node tests/catalog-schema.cjs && node tests/admin-api.mjs && node tests/visit-notification.mjs && node tests/visitor-identity.mjs && node tests/ui.mjs && node tests/admin-ui.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.1.4"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
