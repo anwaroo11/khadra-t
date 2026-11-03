@@ -1,9 +1,43 @@
 /* واجهة خدرة شاي — خطوة بخطوة: الشاي ← الماء ← الذوق ← الوصفة.
  * كل الحسابات والتحقق وصيغ الحفظ في core.js؛ هذا الملف يعرض الحالة ويتنقل بين الشاشات فقط. */
-(function () {
+(async function () {
   'use strict';
 
-  const C = window.KhadraCore;
+  const CATALOG_CACHE = 'khadra-t:catalog-cache:v1';
+  const K = window.KhadraCatalog;
+
+  // الكتالوج المحفوظ من لوحة التحكم؛ وإذا ما فيه (404) أو تعذر الاتصال: آخر نسخة محفوظة على الجهاز، ثم الأصلي.
+  async function loadCore() {
+    const useCatalog = (raw) => {
+      const v = K.validate(raw);
+      return v.ok ? window.createKhadraCore(K.toCoreData(v.data)) : null;
+    };
+    try {
+      const controller = typeof AbortController === 'function' ? new AbortController() : null;
+      const timer = controller && setTimeout(() => controller.abort(), 3000);
+      const res = await fetch('/api/catalog', { cache: 'no-cache', signal: controller ? controller.signal : undefined });
+      clearTimeout(timer);
+      if (res.status === 404) {
+        try { localStorage.removeItem(CATALOG_CACHE); } catch { /* ignore */ }
+        return window.KhadraCore;
+      }
+      if (res.ok) {
+        const raw = await res.json();
+        const core = useCatalog(raw);
+        if (core) {
+          try { localStorage.setItem(CATALOG_CACHE, JSON.stringify(raw)); } catch { /* ignore */ }
+          return core;
+        }
+      }
+    } catch { /* offline or blocked */ }
+    try {
+      const cached = JSON.parse(localStorage.getItem(CATALOG_CACHE));
+      if (cached) return useCatalog(cached) || window.KhadraCore;
+    } catch { /* ignore */ }
+    return window.KhadraCore;
+  }
+
+  const C = await loadCore();
   const $ = (id) => document.getElementById(id);
   const STORAGE_ERROR = 'تعذر الحفظ على الجهاز؛ التغييرات متاحة خلال هذه الجلسة فقط.';
   const STEPS = ['tea', 'water', 'taste', 'result'];
@@ -59,11 +93,13 @@
 
   // kind: 'teas' = بطاقة بالخلفية الموحدة، 'tins' = العلبة مقصوصة. احتياط: الصورة الأصلية ثم أيقونة.
   function teaImage(item, kind, eager) {
+    if (!item.image) return icon('glass');
+    const uploaded = item.image.startsWith('upload:');
     const img = el('img', {
-      src: 'img/' + kind + '/' + item.image, alt: '', decoding: 'async', loading: eager ? 'eager' : 'lazy'
+      src: K.imageUrl(item.image, kind), alt: '', decoding: 'async', loading: eager ? 'eager' : 'lazy'
     });
     img.addEventListener('error', () => {
-      if (!img.dataset.retried) { img.dataset.retried = '1'; img.src = item.image; return; }
+      if (!uploaded && !img.dataset.retried) { img.dataset.retried = '1'; img.src = item.image; return; }
       img.replaceWith(icon('glass'));
     });
     return img;

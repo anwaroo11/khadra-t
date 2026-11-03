@@ -17,11 +17,27 @@
 | `fonts/` | خط ثمانية بصيغة WOFF2 (ملفات OTF الأصلية احتياط) |
 | `visit-notification.js`, `netlify/functions/visit.mjs` | تنبيه الزيارات عبر تيليجرام |
 
-## إضافة نوع شاي
+## لوحة التحكم (`/admin/`)
 
-أضف سطر في `SIMPLE_TEAS` داخل `assets/data.js` (أو عنصر داخل `BRANDED_TEAS` إذا البراند له أكثر من نوع ورق)،
-وحط الصورة الأصلية في الجذر، ثم جهّز منها نسختين بنفس الاسم: العلبة مقصوصة في `img/tins/`
-والعلبة على الخلفية الموحدة في `img/teas/`. إذا ما وجدت النسخ الجديدة تظهر الصورة الأصلية تلقائياً.
+من `https://khadra-t.netlify.app/admin/` تقدر تضيف شاي جديد، أو تعدّل الوزنة والسكر ومدة الخدرة، أو تحذف نوع،
+أو ترجع لنسخة سابقة (آخر 15 حفظ). الصورة ترفعها من جهازك واللوحة تجهّز منها بطاقة بالخلفية العنابية
+وصورة مقصوصة، مع خيار إزالة الخلفية إذا كانت لون واحد.
+
+**التشغيل أول مرة (مرة وحدة):**
+1. في Netlify: **Site configuration ← Environment variables** أضف `ADMIN_PASSWORD` بكلمة مرور قوية.
+2. **Deploys ← Trigger deploy**.
+
+**كيف تشتغل:**
+- البيانات والصور تنحفظ في Netlify Blobs (مخزن `khadra-catalog` و`khadra-images`)، وتظهر في الموقع خلال دقيقة تقريباً بدون نشر جديد.
+- إذا ما فيه شي محفوظ، الموقع يستخدم الكتالوج الأصلي في `assets/data.js`.
+- كل البيانات تمر بنفس الفحص (`assets/catalog.js`) في المتصفح وفي الخادم.
+- الدخول بكوكي موقّع لمدة 12 ساعة، ومحاولات الدخول محدودة (6 بالدقيقة). تغيير كلمة المرور يطلّع كل الجلسات.
+
+| ملفات اللوحة | |
+| --- | --- |
+| `admin/index.html`, `assets/admin.js`, `assets/admin.css` | واجهة اللوحة |
+| `netlify/lib/khadra-api.mjs` | منطق الخادم (الدخول، الحفظ، السجل، الصور) |
+| `netlify/functions/{admin,admin-login,catalog,tea-image}.mjs` | نقاط الاتصال `/api/...` |
 
 ## الحفظ على الجهاز
 
@@ -31,7 +47,12 @@
 ## الاختبارات
 
 ```sh
+npm install                    # مرة وحدة (مكتبة Netlify Blobs)
+npm test                       # كل الاختبارات
 node tests/core-parity.cjs     # يطابق الحساب والحفظ مع النسخة المعتمدة السابقة حرفياً
+node tests/catalog-schema.cjs  # قواعد بيانات الكتالوج
+node tests/admin-api.mjs       # خادم اللوحة: الدخول والحماية والحفظ والسجل والصور
+node tests/admin-ui.mjs        # اللوحة في متصفح حقيقي + ظهور التعديلات في الموقع
 node tests/ui.mjs              # اختبار متصفح حقيقي (يحتاج Playwright، ويتخطى إذا غير موجود)
 node tests/visit-notification.mjs
 node tests/visitor-identity.mjs

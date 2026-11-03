@@ -1,4 +1,5 @@
-/* كتالوج خدرة شاي — القيم لكل 1 لتر ماء. لا تعدّل هذه القيم إلا عند تحديث المقادير المعتمدة. */
+/* كتالوج خدرة شاي الأصلي — القيم لكل 1 لتر ماء.
+ * هذا الكتالوج الافتراضي؛ أي تعديل من لوحة التحكم ينحفظ في Netlify ويغطي عليه. */
 (function (root) {
 'use strict';
 const SIMPLE_TEAS = [
@@ -51,4 +52,5 @@ const BRANDED_TEAS = [
 ];
 
 root.KhadraData = Object.freeze({ SIMPLE_TEAS, BRANDED_TEAS });
+if (typeof module === 'object' && module.exports) module.exports = { SIMPLE_TEAS, BRANDED_TEAS };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

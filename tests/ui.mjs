@@ -19,8 +19,9 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 const server = createServer(async (req, res) => {
   const file = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/$/, '/index.html'));
   if (!file.startsWith(root)) { res.writeHead(403).end(); return; }
-  try { res.writeHead(200, { 'content-type': types[path.extname(file)] || 'application/octet-stream' }).end(await readFile(file)); }
-  catch { res.writeHead(404).end(); }
+  let content;
+  try { content = await readFile(file); } catch { res.writeHead(404).end(); return; }
+  res.writeHead(200, { 'content-type': types[path.extname(file)] || 'application/octet-stream' }).end(content);
 }).listen(0);
 const url = `http://127.0.0.1:${server.address().port}/`;
 
@@ -52,8 +53,9 @@ async function open(storage = {}, options = {}) {
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  page.on('console', (m) => { if (m.type() === 'error' && !/favicon|visit|fonts/.test(m.text())) errors.push(m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/favicon|visit|fonts|404/.test(m.text())) errors.push(m.text()); });
   await page.goto(url);
+  await page.waitForFunction(() => window.__khadra);
   page.errors = errors;
   return page;
 }
