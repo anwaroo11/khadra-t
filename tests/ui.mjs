@@ -1,5 +1,5 @@
 // Run: node tests/ui.mjs
-// اختبار المتصفح الحقيقي للواجهة الجديدة (Playwright). يتخطى بهدوء إذا Playwright غير مثبت.
+// اختبار متصفح حقيقي للواجهة (خطوة بخطوة). يتخطى بهدوء إذا Playwright غير مثبت.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -24,7 +24,6 @@ const server = createServer(async (req, res) => {
 }).listen(0);
 const url = `http://127.0.0.1:${server.address().port}/`;
 
-// نفس المنطق للمقارنة.
 const ctx = vm.createContext({});
 for (const f of ['assets/data.js', 'assets/core.js']) vm.runInContext(await readFile(path.join(root, f), 'utf8'), ctx);
 const Core = ctx.KhadraCore;
@@ -35,8 +34,11 @@ let checks = 0;
 const ok = (value, message) => { checks++; assert.ok(value, message); };
 
 async function open(storage = {}, options = {}) {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, ...options });
-  if (options.blockStorage) {
+  const { blockStorage, ...contextOptions } = options;
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, ...contextOptions });
+  // Google Fonts is external; tests must not depend on the network.
+  await context.route(/fonts\.(googleapis|gstatic)\.com/, (route) => route.fulfill({ status: 200, body: '' }));
+  if (blockStorage) {
     await context.addInitScript(() => {
       Object.defineProperty(window, 'localStorage', { get() { throw new Error('SecurityError'); } });
     });
@@ -50,109 +52,153 @@ async function open(storage = {}, options = {}) {
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  page.on('console', (m) => { if (m.type() === 'error' && !/favicon|visit/.test(m.text())) errors.push(m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/favicon|visit|fonts/.test(m.text())) errors.push(m.text()); });
   await page.goto(url);
   page.errors = errors;
   return page;
 }
 const app = (page) => page.evaluate(() => ({
-  state: window.__khadra.getState(), favorites: window.__khadra.getFavorites(),
+  screen: window.__khadra.screen(), state: window.__khadra.getState(), favorites: window.__khadra.getFavorites(),
   recent: window.__khadra.getRecent(), text: window.__khadra.shareText(),
   stored: Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)]))
 }));
+const onScreen = (page, name) => page.waitForFunction((n) => window.__khadra.screen() === n, name, { timeout: 3000 });
+const tea = (page, label) => page.locator(`.tea[aria-label="${label}"]`);
 
 try {
-  // 1) أول فتح: نفس النتيجة الافتراضية، ولا يحفظ شيء.
+  // 1) أول زيارة: تبدأ من اختيار الشاي ولا يحفظ شيء.
   {
     const page = await open();
-    const a = await app(page);
+    let a = await app(page);
+    ok(a.screen === 'tea' && await page.isVisible('#screenTea'), 'first visit starts at tea');
     ok(a.text === expectedText({}), 'default result');
     ok(!a.stored[Core.KEYS.selection] && !a.stored[Core.KEYS.recent], 'nothing saved on first load');
-    ok((await page.textContent('#teaGrams')) === '12' && (await page.textContent('#sugarGrams')) === '50', 'default amounts shown');
+    ok((await page.locator('.tea').count()) === Core.CATALOG.length, 'all teas listed');
+    ok(await page.locator('.tea[aria-pressed="true"]').count() === 1, 'one tea selected');
 
-    // اختيار شاي من القائمة: يتحدث الحساب بدون ما ينحفظ في السجل.
-    await page.click('#openPicker');
+    // البحث ثم اختيار نوع فرعي: ينتقل للماء بدون ما يسجل خدرة.
     await page.fill('#teaSearch', 'الوزه');
-    ok((await page.locator('.tea-card').count()) === 2, 'search filters catalog');
-    await page.locator('.tea-card', { hasText: 'FBOB1' }).click();
-    let s = await app(page);
-    ok(s.state.product === 'brand:wazah' && s.state.subtype === 'wazah-fbob1', 'picked subtype');
-    ok(s.recent.length === 0, 'picking does not commit');
-    ok(JSON.parse(s.stored[Core.KEYS.selection]).subtype === 'wazah-fbob1', 'selection saved after change');
-    ok((await page.locator('#subtypeChips .chip').count()) === 2, 'subtype chips');
-    await page.locator('#subtypeChips .chip', { hasText: 'OP1' }).click();
-    ok((await app(page)).state.subtype === 'wazah-op1', 'subtype chip switches');
+    ok((await page.locator('.tea:visible').count()) === 2, 'search filters');
+    await tea(page, 'الوزه — OP1').click();
+    await onScreen(page, 'water');
+    a = await app(page);
+    ok(a.state.product === 'brand:wazah' && a.state.subtype === 'wazah-op1', 'picked subtype');
+    ok(a.recent.length === 0, 'picking does not commit');
+    ok(JSON.parse(a.stored[Core.KEYS.selection]).subtype === 'wazah-op1', 'selection saved');
+    ok((await page.textContent('#waterFor')).includes('الوزه'), 'water screen names tea');
 
-    // الحساب يحفظ مرة وحدة فقط.
-    await page.click('#calculateBtn');
-    await page.click('#calculateBtn');
-    s = await app(page);
-    ok(s.recent.length === 1 && s.recent[0].subtype === 'wazah-op1', 'calculate commits once');
-
-    // كمية مخصصة فاضية = خطأ واضح بدون أزرار مشاركة.
+    // الماء: كمية مخصصة فاضية = خطأ والتالي معطل، والأرقام العربية مقبولة.
     await page.click('[data-water="custom"]');
-    ok(await page.isVisible('#brewError') && !(await page.isVisible('#copyBtn')), 'empty custom water error');
-    ok((await page.textContent('#brewErrorText')).includes('بين 1 و100000'), 'error message');
-    await page.click('#calculateBtn');
-    ok((await app(page)).recent.length === 1, 'invalid calculate not committed');
+    ok(await page.isDisabled('#nextBtn'), 'next disabled for empty custom water');
+    await page.fill('#customWater', 'abc');
+    ok((await page.textContent('#waterError')).includes('بين 1 و100000'), 'water error message');
     await page.fill('#customWater', '٧٨٠٫٥');
-    ok((await app(page)).text === expectedText({ product: 'brand:wazah', subtype: 'wazah-op1', water: '780.5', waterMode: 'custom' }), 'arabic digits');
+    ok((await page.textContent('#waterBig')) === '780.5', 'arabic digits');
+    await page.click('#nextBtn');
+    await onScreen(page, 'taste');
+    ok((await page.locator('.taste[data-taste="medium"] .taste-sugar b').textContent()) ===
+      Core.calculate({ ...Core.defaultState(), product: 'brand:wazah', subtype: 'wazah-op1', taste: 'medium', water: '780.5' }).sugarGrams, 'taste card shows sugar');
 
-    // المذاق + المفضلة.
-    await page.click('[data-taste="medium"]');
+    // الذوق = الإجراء النهائي: يحسب ويسجل ويعرض الوصفة.
+    await page.click('.taste[data-taste="medium"]');
+    await onScreen(page, 'result');
+    a = await app(page);
+    const brewState = { product: 'brand:wazah', subtype: 'wazah-op1', taste: 'medium', water: '780.5', waterMode: 'custom' };
+    ok(a.text === expectedText(brewState), 'result text');
+    ok(a.recent.length === 1, 'final step commits');
+    ok((await page.textContent('#teaGrams')) === Core.calculate({ ...Core.defaultState(), ...brewState }).teaGrams, 'tea grams shown');
+    ok(await page.isHidden('#actionbar'), 'no action bar on result');
+
+    // تعديل الذوق من الوصفة: يرجع للوصفة مباشرة، ونفس الخدرة لا تتكرر.
+    await page.click('[data-edit="taste"]');
+    await onScreen(page, 'taste');
+    await page.click('.taste[data-taste="medium"]');
+    await onScreen(page, 'result');
+    ok((await app(page)).recent.length === 1, 'same brew not duplicated');
+    await page.click('[data-edit="water"]');
+    await page.click('[data-water="1000"]');
+    await onScreen(page, 'result');
+    ok((await app(page)).recent.length === 2, 'edited water returns to result and commits');
+
+    // المفضلة.
     await page.click('#favoriteToggle');
-    s = await app(page);
-    ok(s.favorites.length === 1 && JSON.parse(s.stored[Core.KEYS.favorites]).items[0].subtype === 'wazah-op1', 'favorite saved');
+    a = await app(page);
+    ok(a.favorites.length === 1 && JSON.parse(a.stored[Core.KEYS.favorites]).items[0].subtype === 'wazah-op1', 'favorite saved');
     ok((await page.getAttribute('#favoriteToggle', 'aria-pressed')) === 'true', 'favorite pressed');
-    ok((await page.textContent('#favoritesCount')) === '1', 'favorite count badge');
+    ok((await page.textContent('#favoritesCount')) === '1', 'favorites badge');
 
-    // الوزنة اليدوية: صفر سكر = بدون سكر، ونص المدة لا يُفسَّر كـ HTML.
+    // الوزنة الخاصة: صفر سكر = بدون سكر، والمدة نص وليست HTML، ولا يوجد خطوة ذوق.
+    await page.click('#newBrew');
+    await onScreen(page, 'tea');
     await page.click('#modeManual');
+    ok(await page.isDisabled('#nextBtn'), 'manual next disabled until valid');
     await page.fill('#manualTea', '12.55');
     await page.fill('#manualSugar', '0');
     await page.fill('#manualSteep', '<img src=x onerror="window.__xss=1">');
+    ok(await page.isHidden('#stepTasteItem'), 'no taste step in manual');
+    await page.click('#nextBtn');
+    await onScreen(page, 'water');
+    ok((await page.textContent('#nextLabel')) === 'احسب الخدرة', 'manual water is final step');
+    await page.click('#nextBtn');
+    await onScreen(page, 'result');
+    a = await app(page);
     ok((await page.textContent('#sugarGrams')) === 'بدون سكر', 'manual zero sugar');
-    ok(!(await page.evaluate(() => window.__xss)) && (await page.locator('#brewCard img[src="x"]').count()) === 0, 'steep text is not HTML');
+    ok(!(await page.evaluate(() => window.__xss)) && (await page.locator('img[src="x"]').count()) === 0, 'steep text is not HTML');
     ok(await page.isHidden('#favoriteToggle'), 'no favorite in manual mode');
+    ok(a.recent.length === 2, 'markup in steep text is never saved to history');
+    await page.click('[data-edit="tea"]');
+    await onScreen(page, 'tea');
     await page.fill('#manualSteep', '20-25 دقيقة');
-    await page.click('#calculateBtn');
-    s = await app(page);
-    ok(s.recent[0].mode === 'manual' && s.recent[0].sugarPerLiter === '0', 'manual committed');
+    ok((await page.textContent('#nextLabel')) === 'الوصفة', 'editing returns to recipe');
+    await page.click('#nextBtn');
+    await onScreen(page, 'result');
+    a = await app(page);
+    ok(a.recent[0].mode === 'manual' && a.recent[0].sugarPerLiter === '0' && a.recent[0].steepMinutes === '20-25 دقيقة', 'manual committed');
 
-    // صفحة المفضلة: الاختيار يرجع للحاسبة بنفس الماء والمذاق.
-    await page.click('.nav-btn[data-view="favorites"]');
-    ok(await page.isVisible('#favoritesView') && !(await page.isVisible('#calculatorView')), 'favorites view');
+    // صفحة المفضلة: الاختيار يفتح الوصفة بنفس الماء والذوق.
+    await page.click('#navFavorites');
+    await onScreen(page, 'favorites');
     await page.click('.fav-pick');
-    s = await app(page);
-    ok(s.state.mode === 'tea' && s.state.subtype === 'wazah-op1' && s.state.taste === 'medium' && Core.normalizeDigits(s.state.water) === '780.5', 'favorite keeps taste/water');
-    ok(s.recent.length === 3 && await page.isVisible('#calculatorView'), 'favorite select commits and returns');
+    await onScreen(page, 'result');
+    a = await app(page);
+    ok(a.state.mode === 'tea' && a.state.subtype === 'wazah-op1' && a.state.taste === 'medium' && a.state.water === '1000', 'favorite keeps taste/water');
+    ok(a.recent.length === 3 && a.recent[0].mode === 'tea' && a.recent[0].waterMl === '1000', 'favorite select commits (moves identical brew to top)');
 
     // آخر الخدرات: إعادة خدرة قديمة تنقلها للأعلى بدون تكرار.
-    await page.click('.nav-btn[data-view="recent"]');
+    await page.click('#navRecent');
+    await onScreen(page, 'recent');
     ok((await page.locator('.recent-btn').count()) === 3, 'recent list');
-    await page.locator('.recent-btn').nth(2).click();
-    s = await app(page);
-    ok(s.recent.length === 3 && s.recent[0].subtype === 'wazah-op1' && s.recent[0].taste === 'normal', 'replay moves to top');
-    ok(s.text === expectedText({ product: 'brand:wazah', subtype: 'wazah-op1', water: '1000' }), 'replay result');
+    await page.locator('.recent-btn').last().click();
+    await onScreen(page, 'result');
+    a = await app(page);
+    ok(a.recent.length === 3 && Core.normalizeDigits(a.recent[0].waterMl) === '780.5', 'replay moves to top');
 
     // المسح يحتاج تأكيد.
-    await page.click('.nav-btn[data-view="recent"]');
+    await page.click('#navRecent');
     await page.click('#clearRecent');
     ok((await app(page)).recent.length === 3, 'clear needs confirmation');
     await page.click('#clearYes');
-    s = await app(page);
-    ok(s.recent.length === 0 && JSON.parse(s.stored[Core.KEYS.recent]).items.length === 0 && await page.isVisible('#recentEmpty'), 'cleared');
+    a = await app(page);
+    ok(a.recent.length === 0 && JSON.parse(a.stored[Core.KEYS.recent]).items.length === 0 && await page.isVisible('#recentEmpty'), 'cleared');
 
-    // إعادة التحميل تسترجع آخر اختيار بدون إضافة للسجل.
+    // زر الرجوع في المتصفح يرجع خطوة.
+    await page.click('#recentView .back-link');
+    await onScreen(page, 'tea');
+    await page.goBack();
+    await onScreen(page, 'recent');
+    ok(true, 'browser back works');
+
+    // الزائر الراجع يشوف وصفته الأخيرة مباشرة بدون ما تنضاف للسجل.
+    await page.evaluate(() => { location.hash = ''; });
     const before = (await app(page)).text;
     await page.reload();
-    s = await app(page);
-    ok(s.text === before && s.recent.length === 0 && s.favorites.length === 1, 'reload restores');
+    a = await app(page);
+    ok(a.screen === 'result' && a.text === before && a.recent.length === 0 && a.favorites.length === 1, 'returning visitor sees last recipe');
     ok(page.errors.length === 0, 'no console errors: ' + page.errors.join(' | '));
     await page.context().close();
   }
 
-  // 2) بيانات محفوظة بصيغة النسخة السابقة تشتغل كما هي.
+  // 2) بيانات محفوظة بصيغة النسخة السابقة.
   {
     const legacy = {
       [Core.KEYS.selection]: JSON.stringify({ version: 1, mode: 'tea', product: 'brand:munais', subtype: 'munais-bop1', taste: 'nosugar', waterMl: '780.5', waterMode: 'custom', manual: null }),
@@ -161,45 +207,53 @@ try {
     };
     const page = await open(legacy);
     const a = await app(page);
-    ok(a.text === expectedText({ product: 'brand:munais', subtype: 'munais-bop1', taste: 'nosugar', water: '780.5', waterMode: 'custom' }), 'legacy selection');
+    ok(a.screen === 'result' && a.text === expectedText({ product: 'brand:munais', subtype: 'munais-bop1', taste: 'nosugar', water: '780.5', waterMode: 'custom' }), 'legacy selection');
     ok(a.favorites.length === 1 && a.recent.length === 1, 'legacy collections filtered');
-    ok(await page.isVisible('#customWaterField'), 'custom water restored');
-    ok(await page.isVisible('#quickFavorites'), 'quick favorites shown');
+    await page.click('.step-pill[data-go="tea"]');
+    ok(await page.isVisible('#favsRow'), 'favorites row shown');
+    await page.click('.fav-chip');
+    await onScreen(page, 'result');
+    ok((await app(page)).state.product === 'simple:khabt-bop1', 'favorite chip opens recipe');
     await page.context().close();
   }
 
-  // 3) التخزين محجوب: الحاسبة تشتغل.
+  // 3) التخزين محجوب: الحاسبة تشتغل وتنبه.
   {
     const page = await open({}, { blockStorage: true });
+    await page.locator('.tea').first().click();
+    await onScreen(page, 'water');
     await page.click('[data-water="500"]');
+    await onScreen(page, 'taste');
+    await page.click('.taste[data-taste="normal"]');
+    await onScreen(page, 'result');
     ok((await page.textContent('#teaGrams')) === '6', 'works without storage');
-    await page.click('#calculateBtn');
     ok((await page.textContent('#storageNotice')).includes('تعذر الحفظ'), 'storage failure notice');
     await page.context().close();
   }
 
-  // 4) النسخ والواتساب يرسلون نفس النص.
+  // 4) النسخ والواتساب بنفس النص.
   {
     const page = await open({}, { permissions: ['clipboard-read', 'clipboard-write'] });
+    await page.evaluate(() => { location.hash = 'result'; });
+    await onScreen(page, 'result');
     await page.click('#copyBtn');
     await page.waitForFunction(() => document.querySelector('#copyBtn span').textContent.includes('✓'));
-    const copied = await page.evaluate(() => navigator.clipboard.readText());
-    ok(copied === expectedText({}), 'clipboard text');
+    ok((await page.evaluate(() => navigator.clipboard.readText())) === expectedText({}), 'clipboard text');
     const href = await page.getAttribute('#whatsappBtn', 'href');
     ok(decodeURIComponent(href.split('?text=')[1]) === expectedText({}), 'whatsapp text');
     await page.context().close();
   }
 
-  // 5) لا يوجد تمرير أفقي في أي عرض أو مقاس أو وضع.
-  for (const colorScheme of ['light', 'dark']) for (const width of [320, 390, 768, 1024, 1366]) {
-    const page = await open({}, { viewport: { width, height: 900 }, colorScheme });
-    for (const view of ['calculator', 'favorites', 'recent']) {
-      await page.evaluate((v) => { location.hash = v; }, view);
-      await page.waitForTimeout(50);
+  // 5) لا يوجد تمرير أفقي في أي شاشة أو مقاس.
+  for (const width of [320, 390, 768, 1024, 1366]) {
+    const page = await open({}, { viewport: { width, height: 900 } });
+    for (const name of ['tea', 'water', 'taste', 'result', 'favorites', 'recent']) {
+      await page.evaluate((n) => { location.hash = n; }, name);
+      await onScreen(page, name);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
-      ok(overflow <= 0, `overflow ${overflow}px at ${width} ${view} ${colorScheme}`);
+      ok(overflow <= 0, `overflow ${overflow}px at ${width} ${name}`);
     }
-    await page.evaluate(() => { location.hash = 'calculator'; });
+    await page.evaluate(() => { location.hash = 'tea'; });
     await page.click('#modeManual');
     ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0, `manual overflow at ${width}`);
     await page.context().close();
